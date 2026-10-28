@@ -93,7 +93,6 @@
             border-color: var(--primary);
         }
 
-        /* Estils per als exercicis en cascada */
         .exercise-block {
             background-color: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border);
@@ -196,7 +195,7 @@
             background-color: var(--primary-hover);
         }
 
-        /* Timer de descans flotant amb àudio */
+        /* Timer de descans flotant */
         #timer-container {
             position: fixed;
             bottom: 60px;
@@ -321,7 +320,7 @@
     <!-- TEMPORITZADOR DE DESCANS FLOTANT -->
     <div id="timer-container">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Temps de Descans (90s)</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Temps de Descans</span>
             <button onclick="stopTimer()" style="background:none; border:none; color:var(--danger); font-size:1rem; cursor:pointer; width:auto; padding:0;">✕ Tancar</button>
         </div>
         <div id="timer-display">01:30</div>
@@ -383,8 +382,38 @@
         };
 
         let exerciseSetsCount = {};
+        // Memòria cau temporal per conservar dades en afegir sèries
+        let workoutState = {};
+
+        // Recollir dades actuals de la pantalla abans de redibuixar
+        function saveCurrentInputsToState() {
+            const sessionKey = document.getElementById('session-select').value;
+            if (!workoutState[sessionKey]) workoutState[sessionKey] = {};
+
+            const exercises = sessionData[sessionKey];
+            exercises.forEach((exName, exIndex) => {
+                let totalSets = exerciseSetsCount[sessionKey] ? exerciseSetsCount[sessionKey][exIndex] : 3;
+                for(let s = 1; s <= totalSets; s++) {
+                    let wElem = document.getElementById(`w_${exIndex}_${s}`);
+                    let rElem = document.getElementById(`r_${exIndex}_${s}`);
+                    let nElem = document.getElementById(`n_${exIndex}_${s}`);
+                    let btnElem = document.getElementById(`btn_${exIndex}_${s}`);
+
+                    if(wElem || rElem || nElem) {
+                        workoutState[sessionKey][`${exIndex}_${s}`] = {
+                            w: wElem ? wElem.value : '',
+                            r: rElem ? rElem.value : '',
+                            n: nElem ? nElem.value : '',
+                            completed: btnElem ? btnElem.classList.contains('completed') : false
+                        };
+                    }
+                }
+            });
+        }
 
         function renderWorkoutSession() {
+            saveCurrentInputsToState();
+
             const sessionKey = document.getElementById('session-select').value;
             const container = document.getElementById('exercises-container');
             const exercises = sessionData[sessionKey];
@@ -404,13 +433,15 @@
                 `;
 
                 for(let s = 1; s <= totalSets; s++) {
+                    let savedData = (workoutState[sessionKey] && workoutState[sessionKey][`${exIndex}_${s}`]) ? workoutState[sessionKey][`${exIndex}_${s}`] : {w:'', r:'', n:'', completed:false};
+                    
                     html += `
                         <div class="set-row" id="row_${exIndex}_${s}">
                             <label>S${s}</label>
-                            <input type="number" step="0.5" placeholder="Kg" id="w_${exIndex}_${s}">
-                            <input type="number" placeholder="Reps" id="r_${exIndex}_${s}">
-                            <input type="text" class="note-input" placeholder="Notes..." id="n_${exIndex}_${s}">
-                            <button type="button" class="btn-check" id="btn_${exIndex}_${s}" onclick="completeSet(${exIndex}, ${s})">✓</button>
+                            <input type="number" step="0.5" placeholder="Kg" id="w_${exIndex}_${s}" value="${savedData.w}">
+                            <input type="number" placeholder="Reps" id="r_${exIndex}_${s}" value="${savedData.r}">
+                            <input type="text" class="note-input" placeholder="Notes..." id="n_${exIndex}_${s}" value="${savedData.n}">
+                            <button type="button" class="btn-check ${savedData.completed ? 'completed' : ''}" id="btn_${exIndex}_${s}" onclick="completeSet(${exIndex}, ${s})">✓</button>
                         </div>
                     `;
                 }
@@ -431,7 +462,7 @@
             renderWorkoutSession();
         }
 
-        let currentSelectedSeconds = 90; // Estàndard a 90 segons
+        let currentSelectedSeconds = 90;
 
         function completeSet(exIndex, setNum) {
             const btn = document.getElementById(`btn_${exIndex}_${setNum}`);
@@ -473,8 +504,7 @@
                 updateTimerDisplay();
                 if(timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    playBeep();
-                    alert('⏰ Temps de descans finalitzat! A per la següent sèrie.');
+                    playBeep(); // Només sonarà el bip sonor, sense cap missatge emergent de text
                     stopTimer();
                 }
             }, 1000);
@@ -512,6 +542,7 @@
         let historyData = JSON.parse(localStorage.getItem('gym_history')) || [];
 
         function saveWorkoutSession() {
+            saveCurrentInputsToState();
             const sessionKey = document.getElementById('session-select').value;
             const sessionType = sessionKey.toUpperCase();
             const exercises = sessionData[sessionKey];
@@ -521,18 +552,9 @@
             exercises.forEach((exName, exIndex) => {
                 let totalSets = setsCountArr[exIndex];
                 for(let s = 1; s <= totalSets; s++) {
-                    let wElem = document.getElementById(`w_${exIndex}_${s}`);
-                    let rElem = document.getElementById(`r_${exIndex}_${s}`);
-                    let nElem = document.getElementById(`n_${exIndex}_${s}`);
-                    
-                    if(wElem && rElem) {
-                        let w = wElem.value;
-                        let r = rElem.value;
-                        let n = nElem ? nElem.value : '';
-                        // S'guarda si s'ha posat pes o reps, o fins i tot si s'ha escrit nota
-                        if(w || r || n) {
-                            summarySets.push(`${exName} (S${s}): ${w ? w+'kg' : '-'} × ${r ? r+'reps' : '-'} ${n ? '['+n+']' : ''}`);
-                        }
+                    let saved = workoutState[sessionKey] ? workoutState[sessionKey][`${exIndex}_${s}`] : null;
+                    if(saved && (saved.w || saved.r || saved.n)) {
+                        summarySets.push(`${exName} (S${s}): ${saved.w ? saved.w+'kg' : '-'} × ${saved.r ? saved.r+'reps' : '-'} ${saved.n ? '['+saved.n+']' : ''}`);
                     }
                 }
             });
