@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JORDI APP GYM - TTW</title>
+    <title>Gym JORDI TTW</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -99,11 +99,11 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         .exercise-title {
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: bold;
             color: var(--primary);
             margin-bottom: 10px;
@@ -113,7 +113,7 @@
 
         .set-row {
             display: grid;
-            grid-template-columns: 55px 1fr 1fr 2fr 50px;
+            grid-template-columns: 50px 1fr 1fr 2fr 45px;
             gap: 6px;
             align-items: center;
             margin-bottom: 8px;
@@ -126,9 +126,10 @@
             margin-bottom: 0;
             font-weight: bold;
             color: var(--text-main);
+            text-align: center;
         }
 
-        .set-row input[type="text"], .set-row input[type="number"] {
+        .set-row input[type="number"] {
             padding: 8px;
             font-size: 0.9rem;
             text-align: center;
@@ -138,6 +139,7 @@
             text-align: left;
             font-size: 0.8rem;
             color: var(--text-muted);
+            padding: 8px;
         }
 
         .btn-check {
@@ -146,7 +148,7 @@
             border: none;
             padding: 8px;
             border-radius: 6px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
@@ -156,6 +158,23 @@
             background-color: var(--primary);
             color: #000;
             font-weight: bold;
+        }
+
+        .btn-add-set {
+            background-color: transparent;
+            border: 1px dashed var(--primary);
+            color: var(--primary);
+            width: 100%;
+            padding: 8px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .btn-add-set:hover {
+            background-color: rgba(34, 197, 94, 0.1);
         }
 
         button.main-btn {
@@ -176,7 +195,7 @@
             background-color: var(--primary-hover);
         }
 
-        /* Timer flotant / fix de descans */
+        /* Timer de descans flotant amb àudio */
         #timer-container {
             position: fixed;
             bottom: 60px;
@@ -275,7 +294,7 @@
 
     <header>
         <h1>GYM PRO TRACKER</h1>
-        <p>Entrenament efectiu • 3 Sèries per Exercici</p>
+        <p>Control Total de Sèries i Descassos</p>
     </header>
 
     <!-- PESTANYA 1: ENTRENAMENT -->
@@ -298,10 +317,10 @@
         <button class="main-btn" onclick="saveWorkoutSession()">Finalitzar i Guardar Sessió 💾</button>
     </div>
 
-    <!-- TEMPORITZADOR DE DESCANS FLOTANT AMB ÀUDIO -->
+    <!-- TEMPORITZADOR DE DESCANS FLOTANT -->
     <div id="timer-container">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Descans entre sèries</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Temps de Descans</span>
             <button onclick="stopTimer()" style="background:none; border:none; color:var(--danger); font-size:1rem; cursor:pointer; width:auto; padding:0;">✕ Tancar</button>
         </div>
         <div id="timer-display">01:00</div>
@@ -340,7 +359,7 @@
     </nav>
 
     <script>
-        // Definició de les 3 sessions amb els seus 4 exercicis
+        // Definició de les 3 sessions amb els seus 4 exercicis base
         const sessionData = {
             push: [
                 "1. Press de Banca",
@@ -362,23 +381,33 @@
             ]
         };
 
-        // Generar la interfície en cascada per a la sessió triada
+        // Emmagatzematge temporal del nombre de sèries per cada exercici de la sessió actual
+        let exerciseSetsCount = {};
+
         function renderWorkoutSession() {
             const sessionKey = document.getElementById('session-select').value;
             const container = document.getElementById('exercises-container');
             const exercises = sessionData[sessionKey];
 
+            // Inicialitzar a 3 sèries per defecte per a cada exercici si no existeixen
+            if(!exerciseSetsCount[sessionKey]) {
+                exerciseSetsCount[sessionKey] = [3, 3, 3, 3];
+            }
+
             let html = '';
             exercises.forEach((exName, exIndex) => {
+                let totalSets = exerciseSetsCount[sessionKey][exIndex];
+                
                 html += `
                     <div class="exercise-block">
                         <div class="exercise-title">${exName}</div>
+                        <div id="sets-container_${exIndex}">
                 `;
 
-                // 3 sèries per exercici
-                for(let s = 1; s <= 3; s++) {
+                // Dibuixar les sèries
+                for(let s = 1; s <= totalSets; s++) {
                     html += `
-                        <div class="set-row">
+                        <div class="set-row" id="row_${exIndex}_${s}">
                             <label>S${s}</label>
                             <input type="number" step="0.5" placeholder="Kg" id="w_${exIndex}_${s}">
                             <input type="number" placeholder="Reps" id="r_${exIndex}_${s}" value="12">
@@ -388,10 +417,21 @@
                     `;
                 }
 
-                html += `</div>`;
+                html += `
+                        </div>
+                        <button type="button" class="btn-add-set" onclick="addSet(${exIndex})">+ Afegir sèrie</button>
+                    </div>
+                `;
             });
 
             container.innerHTML = html;
+        }
+
+        // Funció per afegir una sèrie extra de manera dinàmica
+        function addSet(exIndex) {
+            const sessionKey = document.getElementById('session-select').value;
+            exerciseSetsCount[sessionKey][exIndex]++;
+            renderWorkoutSession();
         }
 
         // Marcar sèrie com a feta i disparar temporitzador
@@ -406,19 +446,19 @@
             }
         }
 
-        // Sistema d'àudio per avís de descans (Sintetitzador Web Audio API natiu, sense fitxers externs)
+        // Sistema d'àudio natiu (Web Audio API)
         function playBeep() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.value = 800; // freqüència de to
+                osc.frequency.value = 800;
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.5); // dura mig segon
+                osc.stop(audioCtx.currentTime + 0.5);
             } catch(e) {
                 console.log('Àudio no suportat automàticament');
             }
@@ -448,7 +488,6 @@
 
         function setRestTime(seconds) {
             currentSelectedSeconds = seconds;
-            // Actualitzar estils dels botons de temps
             [60, 120, 180].forEach(s => {
                 const b = document.getElementById(`btn-${s}`);
                 if(b) b.classList.remove('active-time');
@@ -480,17 +519,26 @@
         let historyData = JSON.parse(localStorage.getItem('gym_history')) || [];
 
         function saveWorkoutSession() {
-            const sessionType = document.getElementById('session-select').value.toUpperCase();
-            const exercises = sessionData[document.getElementById('session-select').value];
+            const sessionKey = document.getElementById('session-select').value;
+            const sessionType = sessionKey.toUpperCase();
+            const exercises = sessionData[sessionKey];
+            const setsCountArr = exerciseSetsCount[sessionKey] || [3,3,3,3];
             
             let summarySets = [];
             exercises.forEach((exName, exIndex) => {
-                for(let s = 1; s <= 3; s++) {
-                    let w = document.getElementById(`w_${exIndex}_${s}`).value;
-                    let r = document.getElementById(`r_${exIndex}_${s}`).value;
-                    let n = document.getElementById(`n_${exIndex}_${s}`).value;
-                    if(w || r) {
-                        summarySets.push(`${exName} (S${s}): ${w || 0}kg x ${r || 0}reps ${n ? '('+n+')' : ''}`);
+                let totalSets = setsCountArr[exIndex];
+                for(let s = 1; s <= totalSets; s++) {
+                    let wElem = document.getElementById(`w_${exIndex}_${s}`);
+                    let rElem = document.getElementById(`r_${exIndex}_${s}`);
+                    let nElem = document.getElementById(`n_${exIndex}_${s}`);
+                    
+                    if(wElem && rElem) {
+                        let w = wElem.value;
+                        let r = rElem.value;
+                        let n = nElem ? nElem.value : '';
+                        if(w || r) {
+                            summarySets.push(`${exName} (S${s}): ${w || 0}kg x ${r || 0}reps ${n ? '['+n+']' : ''}`);
+                        }
                     }
                 }
             });
