@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ca" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gym Pro Tracker - El teu entrenador de fons</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#10b981', // Verd esmeralda / neó
+                            600: '#059669',
+                            400: '#34d399',
+                            accent: '#22c55e',
+                            darkBg: '#090d16',
+                            cardBg: '#111827',
+                            cardBorder: '#1f2937',
+                            inputBg: '#1f2937'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 10px;
+        }
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.25);
+        }
+        .glow-text {
+            text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        }
+        /* Touch friendly buttons */
+        .btn-touch {
+            min-height: 48px;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="bg-[#090d16] text-gray-100 min-h-screen flex flex-col pb-20 md:pb-0">
+
+    <!-- Header / Navbar Top -->
+    <header class="sticky top-0 z-30 bg-[#090d16]/90 backdrop-blur-md border-b border-gray-800 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-black font-extrabold text-lg shadow-lg">
+                <i class="fa-solid fa-dumbbell"></i>
+            </div>
+            <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-gray-200 to-green-400 bg-clip-text text-transparent">
+                GYM PRO <span class="text-green-500 font-extrabold">TRACKER</span>
+            </span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="restTimerBtn" onclick="openTimerModal()" class="flex items-center gap-2 bg-gray-800 border border-gray-700 text-green-400 px-3 py-1.5 rounded-full text-xs font-semibold hover:border-green-500 transition-all">
+                <i class="fa-solid fa-stopwatch text-sm animate-pulse"></i>
+                <span id="timerDisplayNav">00:00</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Content View Containers -->
+    <main class="flex-1 max-w-lg w-full mx-auto p-4 flex flex-col">
+
+        <!-- VIEW 1: WORKOUT IN PROGRESS / WORKOUTS SELECTION -->
+        <section id="viewWorkout" class="view-panel space-y-4">
+            
+            <!-- Quick Active Session Header if Active -->
+            <div id="activeSessionHeader" class="hidden bg-gradient-to-r from-emerald-950/80 to-gray-900 border border-green-500/40 p-4 rounded-2xl glow-effect space-y-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-xs uppercase font-bold text-green-400 tracking-wider">Sessió en Curs</span>
+                        <h2 id="activeRoutineTitle" class="text-xl font-extrabold text-white">Sessió Personalitzada</h2>
+                    </div>
+                    <button onclick="finishSession()" class="bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-flag-checkered"></i> Finalitzar
+                    </button>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-gray-300 pt-1 border-t border-gray-800">
+                    <div class="flex items-center gap-1">
+                        <i class="fa-regular fa-clock text-green-400"></i>
+                        <span id="sessionDuration">00:00:00</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-[#22c55e] fa-weight-hanging text-green-400"></i>
+                        <span id="sessionVolume">0 kg</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-list-check text-green-400"></i>
+                        <span id="completedSetsCount">0 Sèries</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routine Selector when No Session Active -->
+            <div id="startRoutineCard" class="bg-gray-900 border border-gray-800 p-5 rounded-2xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-play text-green-400"></i> Començar Entrenament
+                    </h2>
+                    <button onclick="openNewRoutineModal()" class="text-xs text-green-400 font-medium hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Nova Rutina
+                    </button>
+                </div>
+
+                <div id="routineList" class="grid grid-cols-1 gap-2.5">
+                    <!-- Dynamic Routine List Rendered Here -->
+                </div>
+            </div>
+
+            <!-- Active Workout Exercise List -->
+            <div id="activeExercisesContainer" class="space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-base font-bold text-gray-200">Exercicis de la Sessió</h3>
+                    <button onclick="openAddExerciseModal()" class="btn-touch bg-green-500 hover:bg-green-600 text-black font-extrabold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-green-500/20">
+                        <i class="fa-solid fa-plus"></i> Afegir Exercici
+                    </button>
+                </div>
+
+                <div id="exerciseCardsList" class="space-y-4">
+                    <!-- Exercise cards rendered here -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- VIEW 2: HISTORY -->
+        <section id="viewHistory" class="view-panel hidden space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-green-400"></i> Historial de Sessions
+                </h2>
+                <button onclick="clearAllHistory()" class="text-xs text-red-400 hover:text-red-300">
+                    Borrar Historial
+                </button>
+            </div>
+            
+            <div id="historyList" class="space-y-3">
+                <!-- History elements rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- VIEW 3: STATS & PRs -->
+        <section id="viewStats" class="view-panel hidden space-y-4">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-green-400"></i> Progrés i Rècords (PR)
+            </h2>
+
+            <!-- Exercise Selector for Graph -->
+            <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-3">
+                <label class="text-xs text-gray-400 font-semibold uppercase tracking-wider block">Selecciona Exercici per Analitzar</label>
+                <select id="statExerciseSelect" onchange="updateChart()" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-green-500">
+                    <!-- Options populated dynamically -->
+                </select>
+            </div>
+
+            <!-- Personal Record Card -->
+            <div class="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Rècord Personal (PR)</span>
+                    <h3 id="prExerciseName" class="text-lg font-bold text-white">Carregant...</h3>
+                </div>
+                <div class="text-right">
+                    <div id="prWeight" class="text-2xl font-black text-white glow-text">-- kg</div>
+                    <div id="prReps" class="text-xs text-gray-400">-- reps</div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl">
+                <h4 class="text-xs font-bold text-gray-400 uppercase mb-3">Evolució de Pes Màxim (kg)</h4>
+                <div class="relative h-64 w-full">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: GOOGLE HOSTING GUIDE -->
+        <section id="viewGoogleGuide" class="view-panel hidden space-y-4">
+            <div class="bg-gradient-to-br from-green-950/40 via-gray-900 to-gray-900 border border-green-500/30 p-5 rounded-2xl space-y-3">
+                <div class="flex items-center gap-3">
+                    <i class="fa-brands fa-google text-2xl text-green-400"></i>
+                    <h2 class="text-lg font-extrabold text-white">Allotjament Gratis amb Google</h2>
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    Pots tenir aquesta aplicació funcionant al teu mòbil com una App real i 100% de franc utilitzant les eines oficials de Google.
+                </p>
+            </div>
+
+            <!-- Option 1: Firebase -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="bg-green-500/20 text-green-400 text-xs font-bold px-2.5 py-1 rounded-lg">Opció 1 (Recomanada)</span>
+                    <span class="text-xs text-gray-400">Ultra-ràpid & SSL</span>
+                </div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-yellow-400"></i> Google Firebase Hosting
+                </h3>
+                <p class="text-xs text-gray-400">
+                    És la millor opció professional per allotjar webs i Web Apps directament des de Google de manera web gratuïta.
+                </p>
+                <ol class="list-decimal list-inside text-xs text-gray-300 space-y-2 pt-1 border-t border-gray-800">
+                    <li>Vés a <a href="https://console.firebase.google.com" target="_blank" class="text-green-400 underline">console.firebase.google.com</a> i crea un projecte gratuït.</li>
+                    <li>Instal·la Firebase CLI al teu ordinador (<code class="bg-gray-800 px-1 py-0.5 rounded text-green-300">npm install -g firebase-tools</code>).</li>
+                    <li>Obre la consola a la carpeta d'aquesta app i escriu <code class="bg-gray-800 px-1 py-0.5 rounded text-green-300">firebase init hosting</code>.</li>
+                    <li>Escriu <code class="bg-gray-800 px-1 py-0.5 rounded text-green-300">firebase deploy</code> i obtindràs la teva URL pública <code class="text-gray-400">https://la-teva-app.web.app</code>.</li>
+                </ol>
+            </div>
+
+            <!-- Option 2: Apps Script -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="bg-blue-500/20 text-blue-400 text-xs font-bold px-2.5 py-1 rounded-lg">Opció 2</span>
+                    <span class="text-xs text-gray-400">Google Drive & Sheets</span>
+                </div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-table text-emerald-400"></i> Google Apps Script
+                </h3>
+                <p class="text-xs text-gray-400">
+                    Allotja el codi directament des del teu compte de Google Drive de franc.
+                </p>
+                <ol class="list-decimal list-inside text-xs text-gray-300 space-y-2 pt-1 border-t border-gray-800">
+                    <li>Obre Google Drive i crea un nou script a <a href="https://script.google.com" target="_blank" class="text-blue-400 underline">script.google.com</a>.</li>
+                    <li>Crea un fitxer anomenat <code class="bg-gray-800 px-1 py-0.5 rounded text-blue-300">Index.html</code> i enganxa tot el codi d'aquesta pàgina.</li>
+                    <li>Al fitxer <code class="bg-gray-800 px-1 py-0.5 rounded">Code.gs</code> afegeix:
+                        <br><code class="block bg-gray-800/80 p-2 my-1 rounded text-gray-300 font-mono text-[10px]">function doGet() { return HtmlService.createHtmlOutputFromFile('Index').setXframeOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); }</code>
+                    </li>
+                    <li>Fes clic a <strong>Deploy &gt; New deployment &gt; Web app</strong> (Accés: "Anyone"). Obten la teva enllaç!</li>
+                </ol>
+            </div>
+
+            <!-- Option 3: AppSheet -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="bg-purple-500/20 text-purple-400 text-xs font-bold px-2.5 py-1 rounded-lg">Opció 3</span>
+                    <span class="text-xs text-gray-400">No-Code Mobile App</span>
+                </div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen text-purple-400"></i> Google AppSheet
+                </h3>
+                <p class="text-xs text-gray-400">
+                    Plataforma oficial de Google per crear aplicacions mòbils natives sense codi a partir d'un Full de Càlcul de Google Sheets.
+                </p>
+                <ul class="list-disc list-inside text-xs text-gray-300 space-y-1.5 pt-1 border-t border-gray-800">
+                    <li>Crea un Google Sheet amb columnes: <i>Data, Exercici, Pes, Repeticions, Descans</i>.</li>
+                    <li>Entra a <a href="https://www.appsheet.com" target="_blank" class="text-purple-400 underline">AppSheet.com</a> i connecta la teva plantilla de Google Sheets.</li>
+                    <li>Generarà automàticament una App instal·lable per Android i iOS.</li>
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Navigation Bar Bottom (Mobile First) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#090d16]/95 backdrop-blur-lg border-t border-gray-800 z-40">
+        <div class="max-w-lg mx-auto flex justify-around items-center h-16 px-2">
+            <button onclick="switchTab('workout')" id="nav-workout" class="nav-btn flex flex-col items-center justify-center flex-1 text-green-500 transition">
+                <i class="fa-solid fa-dumbbell text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Entrenar</span>
+            </button>
+            <button onclick="switchTab('history')" id="nav-history" class="nav-btn flex flex-col items-center justify-center flex-1 text-gray-500 hover:text-gray-300 transition">
+                <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Historial</span>
+            </button>
+            <button onclick="switchTab('stats')" id="nav-stats" class="nav-btn flex flex-col items-center justify-center flex-1 text-gray-500 hover:text-gray-300 transition">
+                <i class="fa-solid fa-chart-line text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Progrés</span>
+            </button>
+            <button onclick="switchTab('googleGuide')" id="nav-googleGuide" class="nav-btn flex flex-col items-center justify-center flex-1 text-gray-500 hover:text-gray-300 transition">
+                <i class="fa-brands fa-google text-lg"></i>
+                <span class="text-[10px] font-semibold mt-1">Allotjar</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODAL: TIMER DE DESCANS -->
+    <div id="timerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-sm text-center space-y-6 glow-effect">
+            <div class="flex justify-between items-center text-gray-400">
+                <span class="text-xs uppercase font-bold tracking-wider">Temporitzador de Descans</span>
+                <button onclick="closeTimerModal()" class="text-lg hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Display -->
+            <div class="py-4">
+                <div id="modalTimerDisplay" class="text-6xl font-black font-mono tracking-wider text-green-400 glow-text">
+                    01:30
+                </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="grid grid-cols-4 gap-2">
+                <button onclick="setTimerPreset(45)" class="bg-gray-800 hover:bg-gray-700 py-2 rounded-xl text-xs font-bold">45s</button>
+                <button onclick="setTimerPreset(60)" class="bg-gray-800 hover:bg-gray-700 py-2 rounded-xl text-xs font-bold">60s</button>
+                <button onclick="setTimerPreset(90)" class="bg-gray-800 hover:bg-gray-700 py-2 rounded-xl text-xs font-bold">90s</button>
+                <button onclick="setTimerPreset(120)" class="bg-gray-800 hover:bg-gray-700 py-2 rounded-xl text-xs font-bold">120s</button>
+            </div>
+
+            <!-- Timer Controls -->
+            <div class="flex gap-3">
+                <button id="startTimerBtn" onclick="toggleTimer()" class="flex-1 btn-touch bg-green-500 hover:bg-green-600 text-black font-extrabold rounded-2xl flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Iniciar
+                </button>
+                <button onclick="resetTimer()" class="btn-touch px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-2xl">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CREAR RUTINA -->
+    <div id="newRoutineModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-sm space-y-4">
+            <h3 class="text-lg font-bold text-white">Nova Rutina Personalitzada</h3>
+            <div>
+                <label class="text-xs text-gray-400 block mb-1">Nom de la Rutina</label>
+                <input type="text" id="newRoutineInput" placeholder="ex. Torso Hypertrophy" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-green-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeNewRoutineModal()" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white">Cancel·lar</button>
+                <button onclick="saveNewRoutine()" class="px-4 py-2 text-xs font-bold bg-green-500 text-black rounded-xl">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AFEGIR EXERCI -->
+    <div id="addExerciseModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-sm space-y-4">
+            <h3 class="text-lg font-bold text-white">Afegir Exercici a la Sessió</h3>
+            <div>
+                <label class="text-xs text-gray-400 block mb-1">Nom de l'Exercici</label>
+                <input type="text" id="exerciseNameInput" placeholder="ex. Press Banca amb Barra" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-green-500">
+            </div>
+            <div>
+                <label class="text-xs text-gray-400 block mb-1">Grup Muscular</label>
+                <select id="exerciseCategoryInput" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-green-500">
+                    <option value="Pit">Pit</option>
+                    <option value="Spats">Espatlla / Dorsal</option>
+                    <option value="Hombro">Umeral / Cames</option>
+                    <option value="Cames">Cames / Quàdriceps</option>
+                    <option value="Braços">Braços (Biceps/Triceps)</option>
+                    <option value="Core">Core / Abdominals</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeAddExerciseModal()" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white">Cancel·lar</button>
+                <button onclick="addExerciseToActiveSession()" class="px-4 py-2 text-xs font-bold bg-green-500 text-black rounded-xl">Afegir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGICA JAVASCRIPT APP -->
+    <script>
+        // --- DATA STATE ---
+        const DEFAULT_ROUTINES = [
+            { id: '1', name: 'Empenta / Push (Pit, Espatlla, Tríceps)' },
+            { id: '2', name: 'Tirada / Pull (Espatlla, Biceps)' },
+            { id: '3', name: 'Cama / Legs (Quàdriceps, Isquios, Bessons)' },
+            { id: '4', name: 'Torso / Cama' }
+        ];
+
+        let state = {
+            routines: JSON.parse(localStorage.getItem('gym_routines')) || DEFAULT_ROUTINES,
+            activeSession: JSON.parse(localStorage.getItem('gym_active_session')) || null,
+            history: JSON.parse(localStorage.getItem('gym_history')) || []
+        };
+
+        // Timer State
+        let timer = {
+            secondsRemaining: 90,
+            initialSeconds: 90,
+            interval: null,
+            isRunning: false
+        };
+
+        let sessionTimerInterval = null;
+        let chartInstance = null;
+
+        // --- INIT APP ---
+        window.onload = function() {
+            renderRoutines();
+            checkActiveSession();
+            updateHistoryUI();
+            populateExerciseSelectForStats();
+        };
+
+        // --- NAVIGATION ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('text-green-500');
+                el.classList.add('text-gray-500');
+            });
+
+            document.getElementById(`view${capitalize(tabName)}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabName}`);
+            activeNav.classList.remove('text-gray-500');
+            activeNav.classList.add('text-green-500');
+
+            if (tabName === 'stats') {
+                updateChart();
+            }
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        // --- ROUTINES & ACTIVE SESSION MANAGEMENT ---
+        function renderRoutines() {
+            const list = document.getElementById('routineList');
+            list.innerHTML = state.routines.map(r => `
+                <div class="bg-gray-800/60 border border-gray-700/80 p-3.5 rounded-xl flex justify-between items-center hover:border-green-500/50 transition">
+                    <span class="font-semibold text-sm text-gray-200">${escapeHtml(r.name)}</span>
+                    <button onclick="startSession('${r.id}', '${escapeHtml(r.name)}')" class="btn-touch bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition">
+                        <i class="fa-solid fa-play text-[10px]"></i> Iniciar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function startSession(routineId, routineName) {
+            if (state.activeSession) {
+                if (!confirm("Ja tens una sessió activa. Vols descartar-la i iniciar-ne una de nova?")) return;
+            }
+
+            state.activeSession = {
+                id: Date.now().toString(),
+                routineName: routineName || 'Sessió Lliure',
+                startTime: Date.now(),
+                exercises: []
+            };
+
+            saveActiveSession();
+            checkActiveSession();
+        }
+
+        function checkActiveSession() {
+            const activeHeader = document.getElementById('activeSessionHeader');
+            const startCard = document.getElementById('startRoutineCard');
+            const activeExercisesContainer = document.getElementById('activeExercisesContainer');
+
+            if (state.activeSession) {
+                activeHeader.classList.remove('hidden');
+                startCard.classList.add('hidden');
+                activeExercisesContainer.classList.remove('hidden');
+
+                document.getElementById('activeRoutineTitle').innerText = state.activeSession.routineName;
+
+                startSessionTimer();
+                renderActiveExercises();
+                updateSessionMetrics();
+            } else {
+                activeHeader.classList.add('hidden');
+                startCard.classList.remove('hidden');
+                activeExercisesContainer.classList.add('hidden');
+                stopSessionTimer();
+            }
+        }
+
+        function saveActiveSession() {
+            localStorage.setItem('gym_active_session', JSON.stringify(state.activeSession));
+        }
+
+        function finishSession() {
+            if (!state.activeSession || state.activeSession.exercises.length === 0) {
+                if (!confirm("No has registrat cap exercici. Vols finalitzar la sessió igualment?")) return;
+            }
+
+            const completedSession = {
+                ...state.activeSession,
+                endTime: Date.now(),
+                durationSeconds: Math.floor((Date.now() - state.activeSession.startTime) / 1000)
+            };
+
+            state.history.unshift(completedSession);
+            localStorage.setItem('gym_history', JSON.stringify(state.history));
+
+            state.activeSession = null;
+            localStorage.removeItem('gym_active_session');
+
+            checkActiveSession();
+            updateHistoryUI();
+            populateExerciseSelectForStats();
+            
+            showToast("Sessió completada i desada amb èxit!");
+        }
+
+        // --- SESSION METRICS & TIMER ---
+        function startSessionTimer() {
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            sessionTimerInterval = setInterval(() => {
+                if (!state.activeSession) return;
+                const elapsed = Math.floor((Date.now() - state.activeSession.startTime) / 1000);
+                const hrs = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+                const secs = String(elapsed % 60).padStart(2, '0');
+                document.getElementById('sessionDuration').innerText = `${hrs}:${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopSessionTimer() {
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+        }
+
+        function updateSessionMetrics() {
+            if (!state.activeSession) return;
+
+            let totalVolume = 0;
+            let totalSets = 0;
+
+            state.activeSession.exercises.forEach(ex => {
+                ex.sets.forEach(s => {
+                    if (s.completed) {
+                        totalVolume += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+                        totalSets++;
+                    }
+                });
+            });
+
+            document.getElementById('sessionVolume').innerText = `${totalVolume} kg`;
+            document.getElementById('completedSetsCount').innerText = `${totalSets} Sèries`;
+        }
+
+        // --- EXERCISE & SET LOGIC ---
+        function openAddExerciseModal() {
+            document.getElementById('addExerciseModal').classList.remove('hidden');
+        }
+
+        function closeAddExerciseModal() {
+            document.getElementById('addExerciseModal').classList.add('hidden');
+        }
+
+        function addExerciseToActiveSession() {
+            const nameInput = document.getElementById('exerciseNameInput');
+            const categoryInput = document.getElementById('exerciseCategoryInput');
+
+            if (!nameInput.value.trim()) return;
+
+            const newEx = {
+                id: Date.now().toString(),
+                name: nameInput.value.trim(),
+                category: categoryInput.value,
+                sets: [
+                    { weight: '', reps: '', type: 'efectiva', completed: false }
+                ]
+            };
+
+            state.activeSession.exercises.push(newEx);
+            saveActiveSession();
+            renderActiveExercises();
+            closeAddExerciseModal();
+            nameInput.value = '';
+        }
+
+        function renderActiveExercises() {
+            const container = document.getElementById('exerciseCardsList');
+            if (!state.activeSession || state.activeSession.exercises.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500 border border-dashed border-gray-800 rounded-2xl">
+                        <i class="fa-solid fa-dumbbell text-3xl mb-2 text-gray-700"></i>
+                        <p class="text-xs">No hi ha cap exercici a la sessió actual.<br>Fes clic a "Afegir Exercici".</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = state.activeSession.exercises.map((ex, exIndex) => `
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-extrabold text-base text-white">${escapeHtml(ex.name)}</h4>
+                            <span class="text-[10px] uppercase font-semibold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-md">${escapeHtml(ex.category)}</span>
+                        </div>
+                        <button onclick="removeExercise(${exIndex})" class="text-gray-500 hover:text-red-400 text-xs p-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sets Header -->
+                    <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-400 uppercase text-center px-1">
+                        <span class="col-span-2 text-left">Sèrie</span>
+                        <span class="col-span-3">Pes (kg)</span>
+                        <span class="col-span-3">Reps</span>
+                        <span class="col-span-2">Tipus</span>
+                        <span class="col-span-2">Fet</span>
+                    </div>
+
+                    <!-- Sets List -->
+                    <div class="space-y-2">
+                        ${ex.sets.map((set, setIndex) => `
+                            <div class="grid grid-cols-12 gap-2 items-center ${set.completed ? 'bg-green-950/20 border border-green-500/30' : 'bg-gray-800/50'} p-1.5 rounded-xl transition">
+                                <span class="col-span-2 text-xs font-bold text-gray-400 text-center">${setIndex + 1}</span>
+                                <input type="number" value="${set.weight}" placeholder="0" onchange="updateSetData(${exIndex}, ${setIndex}, 'weight', this.value)" class="col-span-3 bg-gray-800 border border-gray-700 text-center text-sm font-bold text-white rounded-lg p-1.5 focus:outline-none focus:border-green-500">
+                                <input type="number" value="${set.reps}" placeholder="0" onchange="updateSetData(${exIndex}, ${setIndex}, 'reps', this.value)" class="col-span-3 bg-gray-800 border border-gray-700 text-center text-sm font-bold text-white rounded-lg p-1.5 focus:outline-none focus:border-green-500">
+                                <select onchange="updateSetData(${exIndex}, ${setIndex}, 'type', this.value)" class="col-span-2 bg-gray-800 border border-gray-700 text-[10px] text-gray-300 rounded-lg p-1.5 focus:outline-none">
+                                    <option value="escalfament" ${set.type === 'escalfament' ? 'selected' : ''}>E</option>
+                                    <option value="efectiva" ${set.type === 'efectiva' ? 'selected' : ''}>N</option>
+                                    <option value="fall" ${set.type === 'fall' ? 'selected' : ''}>F</option>
+                                </select>
+                                <button onclick="toggleSetCompleted(${exIndex}, ${setIndex})" class="col-span-2 flex items-center justify-center p-2 rounded-lg ${set.completed ? 'bg-green-500 text-black' : 'bg-gray-700 text-gray-400'} transition">
+                                    <i class="fa-solid fa-check text-xs"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button onclick="addSetToExercise(${exIndex})" class="w-full border border-dashed border-gray-700 hover:border-green-500 text-gray-400 hover:text-green-400 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-plus text-[10px]"></i> Afegir Sèrie
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addSetToExercise(exIndex) {
+            const sets = state.activeSession.exercises[exIndex].sets;
+            const lastSet = sets[sets.length - 1] || { weight: '', reps: '', type: 'efectiva' };
+            
+            sets.push({
+                weight: lastSet.weight,
+                reps: lastSet.reps,
+                type: 'efectiva',
+                completed: false
+            });
+
+            saveActiveSession();
+            renderActiveExercises();
+        }
+
+        function updateSetData(exIndex, setIndex, field, value) {
+            state.activeSession.exercises[exIndex].sets[setIndex][field] = value;
+            saveActiveSession();
+            updateSessionMetrics();
+        }
+
+        function toggleSetCompleted(exIndex, setIndex) {
+            const set = state.activeSession.exercises[exIndex].sets[setIndex];
+            set.completed = !set.completed;
+            
+            saveActiveSession();
+            renderActiveExercises();
+            updateSessionMetrics();
+
+            // Auto-trigger rest timer if completed
+            if (set.completed) {
+                triggerTimerNotification();
+            }
+        }
+
+        function removeExercise(exIndex) {
+            state.activeSession.exercises.splice(exIndex, 1);
+            saveActiveSession();
+            renderActiveExercises();
+            updateSessionMetrics();
+        }
+
+        // --- REST TIMER ---
+        function openTimerModal() {
+            document.getElementById('timerModal').classList.remove('hidden');
+        }
+
+        function closeTimerModal() {
+            document.getElementById('timerModal').classList.add('hidden');
+        }
+
+        function setTimerPreset(secs) {
+            timer.initialSeconds = secs;
+            timer.secondsRemaining = secs;
+            updateTimerDisplay();
+        }
+
+        function toggleTimer() {
+            if (timer.isRunning) {
+                clearInterval(timer.interval);
+                timer.isRunning = false;
+                document.getElementById('startTimerBtn').innerHTML = `<i class="fa-solid fa-play"></i> Iniciar`;
+            } else {
+                timer.isRunning = true;
+                document.getElementById('startTimerBtn').innerHTML = `<i class="fa-solid fa-pause"></i> Pausa`;
+                timer.interval = setInterval(() => {
+                    if (timer.secondsRemaining > 0) {
+                        timer.secondsRemaining--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timer.interval);
+                        timer.isRunning = false;
+                        document.getElementById('startTimerBtn').innerHTML = `<i class="fa-solid fa-play"></i> Iniciar`;
+                        playTimerAudioAlert();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer.interval);
+            timer.isRunning = false;
+            timer.secondsRemaining = timer.initialSeconds;
+            document.getElementById('startTimerBtn').innerHTML = `<i class="fa-solid fa-play"></i> Iniciar`;
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const mins = String(Math.floor(timer.secondsRemaining / 60)).padStart(2, '0');
+            const secs = String(timer.secondsRemaining % 60).padStart(2, '0');
+            const formatted = `${mins}:${secs}`;
+
+            document.getElementById('timerDisplayNav').innerText = formatted;
+            document.getElementById('modalTimerDisplay').innerText = formatted;
+        }
+
+        function triggerTimerNotification() {
+            resetTimer();
+            toggleTimer();
+        }
+
+        function playTimerAudioAlert() {
+            // Web Audio API beep sound
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = 800;
+                osc.connect(ctx.destination);
+                osc.start();
+                setTimeout(() => osc.stop(), 500);
+
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([200, 100, 200]);
+                }
+            } catch (e) {
+                console.log('Audio context not available');
+            }
+        }
+
+        // --- NEW ROUTINES MODAL ---
+        function openNewRoutineModal() {
+            document.getElementById('newRoutineModal').classList.remove('hidden');
+        }
+
+        function closeNewRoutineModal() {
+            document.getElementById('newRoutineModal').classList.add('hidden');
+        }
+
+        function saveNewRoutine() {
+            const input = document.getElementById('newRoutineInput');
+            if (!input.value.trim()) return;
+
+            state.routines.push({
+                id: Date.now().toString(),
+                name: input.value.trim()
+            });
+
+            localStorage.setItem('gym_routines', JSON.stringify(state.routines));
+            renderRoutines();
+            closeNewRoutineModal();
+            input.value = '';
+        }
+
+        // --- HISTORY VIEW ---
+        function updateHistoryUI() {
+            const container = document.getElementById('historyList');
+
+            if (state.history.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-gray-500 border border-dashed border-gray-800 rounded-2xl">
+                        <i class="fa-solid fa-box-open text-3xl mb-2 text-gray-700"></i>
+                        <p class="text-xs">Ancara no has completat cap entrenament.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = state.history.map(session => {
+                const dateStr = new Date(session.startTime).toLocaleDateString('ca-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                let totalVol = 0;
+                session.exercises.forEach(e => e.sets.forEach(s => { if (s.completed) totalVol += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0); }));
+
+                return `
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-sm text-white">${escapeHtml(session.routineName)}</h4>
+                            <span class="text-xs text-gray-400">${dateStr}</span>
+                        </div>
+                        <div class="flex gap-4 text-xs text-gray-400">
+                            <span><i class="fa-regular fa-clock text-green-400 mr-1"></i>${Math.floor(session.durationSeconds / 60)} min</span>
+                            <span><i class="fa-solid fa-weight-hanging text-green-400 mr-1"></i>${totalVol} kg</span>
+                            <span><i class="fa-solid fa-list text-green-400 mr-1"></i>${session.exercises.length} Exercicis</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearAllHistory() {
+            if (confirm("Segur que vols esborrar tot el teu historial d'entrenaments?")) {
+                state.history = [];
+                localStorage.setItem('gym_history', JSON.stringify([]));
+                updateHistoryUI();
+                populateExerciseSelectForStats();
+            }
+        }
+
+        // --- STATS & PRs (CHART.JS) ---
+        function populateExerciseSelectForStats() {
+            const select = document.getElementById('statExerciseSelect');
+            const exerciseNames = new Set();
+
+            state.history.forEach(session => {
+                session.exercises.forEach(ex => exerciseNames.add(ex.name));
+            });
+
+            if (exerciseNames.size === 0) {
+                select.innerHTML = `<option value="">Sense dades registrades</option>`;
+                return;
+            }
+
+            select.innerHTML = Array.from(exerciseNames).map(name => `
+                <option value="${escapeHtml(name)}">${escapeHtml(name)}</option>
+            `).join('');
+
+            updateChart();
+        }
+
+        function updateChart() {
+            const selectedEx = document.getElementById('statExerciseSelect').value;
+            const ctx = document.getElementById('progressChart').getContext('2d');
+
+            if (!selectedEx) {
+                document.getElementById('prExerciseName').innerText = 'Sense Dades';
+                document.getElementById('prWeight').innerText = '-- kg';
+                document.getElementById('prReps').innerText = '-- reps';
+                return;
+            }
+
+            let chartData = [];
+            let maxWeight = 0;
+            let maxReps = 0;
+
+            // Gather chronological data points
+            const sortedHistory = [...state.history].reverse();
+
+            sortedHistory.forEach(session => {
+                session.exercises.forEach(ex => {
+                    if (ex.name === selectedEx) {
+                        let sessionMaxWeight = 0;
+                        ex.sets.forEach(s => {
+                            if (s.completed && parseFloat(s.weight) > 0) {
+                                const w = parseFloat(s.weight);
+                                const r = parseInt(s.reps);
+                                if (w > sessionMaxWeight) sessionMaxWeight = w;
+                                if (w > maxWeight) {
+                                    maxWeight = w;
+                                    maxReps = r;
+                                }
+                            }
+                        });
+
+                        if (sessionMaxWeight > 0) {
+                            chartData.push({
+                                date: new Date(session.startTime).toLocaleDateString('ca-ES', { day: 'numeric', month: 'short' }),
+                                weight: sessionMaxWeight
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Update PR Display
+            document.getElementById('prExerciseName').innerText = selectedEx;
+            document.getElementById('prWeight').innerText = `${maxWeight} kg`;
+            document.getElementById('prReps').innerText = `${maxReps} reps`;
+
+            // Draw / Update Chart
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(d => d.date),
+                    datasets: [{
+                        label: 'Pes Màxim (kg)',
+                        data: chartData.map(d => d.weight),
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#22c55e',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- UTILS ---
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-16 left-1/2 transform -translate-x-1/2 bg-green-500 text-black text-xs font-bold px-4 py-2 rounded-full shadow-lg z-50 animate-bounce';
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
