@@ -196,34 +196,26 @@
 
     <header>
         <h1>GYM PRO TRACKER</h1>
-        <p>Entrenament efectiu: 3 Sèries (10-15 Reps)</p>
+        <p>Sessions, 3 Sèries • 10-15 Repeticions</p>
     </header>
 
     <!-- PESTANYA 1: ENTRENAMENT -->
     <div id="tab-workout" class="tab-content active">
         <div class="card">
-            <h2>💪 Registrar Sèrie</h2>
+            <h2>🏋️ Selecciona Sessió</h2>
             <div class="form-group">
-                <label for="exercise-select">Selecciona Exercici (4 per grup)</label>
+                <label for="session-select">Tipus de Rutina</label>
+                <select id="session-select" onchange="updateExercises()">
+                    <option value="push">Sessió Push (Pit, Espatlla, Tríceps)</option>
+                    <option value="pull">Sessió Pull (Esquena, Bíceps)</option>
+                    <option value="legs">Sessió Cames (Quàdriceps, Isquis, Cama)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="exercise-select">Exercici (3 Sèries | 10-15 Reps)</label>
                 <select id="exercise-select">
-                    <optgroup label="Pit (3 Sèries | 10-15 Reps)">
-                        <option value="Press de Banca">1. Press de Banca</option>
-                        <option value="Press Inclinat amb Mancornes">2. Press Inclinat amb Mancornes</option>
-                        <option value="Obertures en Pollea">3. Obertures en Pollea</option>
-                        <option value="Fons en Paral·leles">4. Fons en Paral·leles</option>
-                    </optgroup>
-                    <optgroup label="Esquena (3 Sèries | 10-15 Reps)">
-                        <option value="Dominades o Jaló al Pit">1. Dominades o Jaló al Pit</option>
-                        <option value="Rem en Pollea Baixa">2. Rem en Pollea Baixa</option>
-                        <option value="Rem amb Mancona a una mà">3. Rem amb Mancona a una mà</option>
-                        <option value="Pull-over en Pollea">4. Pull-over en Pollea</option>
-                    </optgroup>
-                    <optgroup label="Cames (3 Sèries | 10-15 Reps)">
-                        <option value="Esquat Lliure">1. Esquat Lliure</option>
-                        <option value="Prensa de Cames 45º">2. Prensa de Cames 45º</option>
-                        <option value="Extensions de Quàdriceps">3. Extensions de Quàdriceps</option>
-                        <option value="Curl Isquiotibials">4. Curl Isquiotibials</option>
-                    </optgroup>
+                    <!-- S'omplirà dinàmicament per JavaScript -->
                 </select>
             </div>
 
@@ -265,7 +257,7 @@
         <div class="card">
             <h2>📋 Historial d'Entrenaments</h2>
             <div id="history-list">
-                <p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha registres avui.</p>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha registres.</p>
             </div>
         </div>
     </div>
@@ -286,6 +278,45 @@
     </nav>
 
     <script>
+        // Definició de les 3 sessions amb 4 exercicis cadascuna
+        const sessionExercises = {
+            push: [
+                "1. Press de Banca (3 Sèries)",
+                "2. Press Inclinat amb Mancornes (3 Sèries)",
+                "3. Obertures en Pollea / Pit (3 Sèries)",
+                "4. Extensions de Tríceps (3 Sèries)"
+            ],
+            pull: [
+                "1. Dominades o Jaló al Pit (3 Sèries)",
+                "2. Rem en Pollea Baixa (3 Sèries)",
+                "3. Rem amb Mancorna a una mà (3 Sèries)",
+                "4. Curl de Bíceps amb Barra (3 Sèries)"
+            ],
+            legs: [
+                "1. Esquat Lliure o Multipower (3 Sèries)",
+                "2. Prensa de Cames 45º (3 Sèries)",
+                "3. Extensions de Quàdriceps (3 Sèries)",
+                "4. Curl Isquiotibials (3 Sèries)"
+            ]
+        };
+
+        function updateExercises() {
+            const sessionSelect = document.getElementById('session-select').value;
+            const exerciseSelect = document.getElementById('exercise-select');
+            const exercises = sessionExercises[sessionSelect];
+
+            exerciseSelect.innerHTML = '';
+            exercises.forEach(ex => {
+                const opt = document.createElement('option');
+                opt.value = ex;
+                opt.textContent = ex;
+                exerciseSelect.appendChild(opt);
+            });
+        }
+
+        // Inicialitzar els exercicis al carregar
+        updateExercises();
+
         // Gestió de Pestanyes
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -299,6 +330,7 @@
         let historyData = JSON.parse(localStorage.getItem('gym_history')) || [];
 
         function logSet() {
+            const sessionType = document.getElementById('session-select').value.toUpperCase();
             const exercise = document.getElementById('exercise-select').value;
             const set = document.getElementById('set-num').value;
             const weight = document.getElementById('weight-input').value;
@@ -311,6 +343,7 @@
 
             const record = {
                 date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                sessionType,
                 exercise,
                 set,
                 weight,
@@ -333,12 +366,13 @@
         function updateHistoryUI() {
             const container = document.getElementById('history-list');
             if(historyData.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha registres avui.</p>';
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha registres.</p>';
                 return;
             }
 
             container.innerHTML = historyData.slice(0, 15).map(item => `
                 <div class="history-item">
+                    <span style="font-size:0.75rem; color:var(--primary);">[${item.sessionType}]</span><br>
                     <strong>${item.exercise}</strong> (Sèrie ${item.set})<br>
                     <span style="color: var(--primary);">${item.weight} kg</span> × ${item.reps} reps 
                     <span style="float: right; font-size: 0.75rem; color: var(--text-muted);">${item.date}</span>
