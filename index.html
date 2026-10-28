@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Pro Tracker</title>
+    <title>Jordi APP GYM - TTW</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -382,10 +382,8 @@
         };
 
         let exerciseSetsCount = {};
-        // Memòria cau temporal per conservar dades en afegir sèries
         let workoutState = {};
 
-        // Recollir dades actuals de la pantalla abans de redibuixar
         function saveCurrentInputsToState() {
             const sessionKey = document.getElementById('session-select').value;
             if (!workoutState[sessionKey]) workoutState[sessionKey] = {};
@@ -457,6 +455,7 @@
         }
 
         function addSet(exIndex) {
+            saveCurrentInputsToState(); // Guardar abans d'incrementar
             const sessionKey = document.getElementById('session-select').value;
             exerciseSetsCount[sessionKey][exIndex]++;
             renderWorkoutSession();
@@ -504,7 +503,7 @@
                 updateTimerDisplay();
                 if(timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    playBeep(); // Només sonarà el bip sonor, sense cap missatge emergent de text
+                    playBeep(); // Només sonarà el so, sense cap missatge de text
                     stopTimer();
                 }
             }, 1000);
