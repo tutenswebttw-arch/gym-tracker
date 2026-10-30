@@ -101,13 +101,39 @@
             margin-bottom: 15px;
         }
 
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
         .exercise-title {
             font-size: 1.05rem;
             font-weight: bold;
             color: var(--primary);
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 5px;
+        }
+
+        .target-reps-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .target-reps-container label {
+            font-size: 0.75rem;
+            margin-bottom: 0;
+            color: var(--text-muted);
+        }
+
+        .target-reps-input {
+            width: 75px !important;
+            padding: 4px 6px !important;
+            font-size: 0.85rem !important;
+            text-align: center;
+            background-color: var(--card-bg) !important;
         }
 
         .set-row {
@@ -368,57 +394,64 @@
     <script>
         const sessionData = {
             royalpit: [
-                "1. Press Banca ",
-                "2. Press Inclinat",
-                "3. Creuament politges superior",
-                "4. Extensió Tríceps",
-                "5. Elevacions Laterals"
+                { name: "1. Press Banca ", defaultTarget: "8-10" },
+                { name: "2. Press Inclinat", defaultTarget: "10-12" },
+                { name: "3. Creuament politges superior", defaultTarget: "12-15" },
+                { name: "4. Extensió Tríceps", defaultTarget: "12-15" },
+                { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
             ],
             royalcama: [
-                "1. Sentadilla Cinturo / Sentadilla barra fixa",
-                "2. Búlgares",
-                "3. Femoral Sentat",
-                "4. Hak",
-                "5. Adductors"
+                { name: "1. Sentadilla Cinturo / Sentadilla barra fixa", defaultTarget: "8-10" },
+                { name: "2. Búlgares", defaultTarget: "10-12" },
+                { name: "3. Femoral Sentat", defaultTarget: "12-15" },
+                { name: "4. Hak", defaultTarget: "10-12" },
+                { name: "5. Adductors", defaultTarget: "12-15" }
             ],
             royalpress: [
-                "1. Elevació Barra gran (hombros)",
-                "2. Press Manuelles",
-                "3. Rem una mà",
-                "4. Tracció pit barra ampla",
-                "5. Elevacions Laterals"
+                { name: "1. Elevació Barra gran (hombros)", defaultTarget: "8-10" },
+                { name: "2. Press Manuelles", defaultTarget: "10-12" },
+                { name: "3. Rem una mà", defaultTarget: "10-12" },
+                { name: "4. Tracció pit barra ampla", defaultTarget: "10-12" },
+                { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
+            ],
+            push: [
+                { name: "1. Press de Banca", defaultTarget: "8-10" },
+                { name: "2. Press Inclinat amb Mancornes", defaultTarget: "10-12" },
+                { name: "3. Obertures en Pollea / Pit", defaultTarget: "12-15" },
+                { name: "4. Extensions de Tríceps", defaultTarget: "12-15" }
             ],
             pull: [
-                "1. Dominades o Jaló al Pit",
-                "2. Rem en Pollea Baixa",
-                "3. Rem amb Mancorna a una mà",
-                "4. Curl de Bíceps amb Barra"
+                { name: "1. Dominades o Jaló al Pit", defaultTarget: "8-10" },
+                { name: "2. Rem en Pollea Baixa", defaultTarget: "10-12" },
+                { name: "3. Rem amb Mancorna a una mà", defaultTarget: "10-12" },
+                { name: "4. Curl de Bíceps amb Barra", defaultTarget: "12-15" }
             ],
             legs: [
-                "1. Esquat Lliure o Multipower",
-                "2. Prensa de Cames 45º",
-                "3. Extensions de Quàdriceps",
-                "4. Curl Isquiotibials"
+                { name: "1. Esquat Lliure o Multipower", defaultTarget: "8-10" },
+                { name: "2. Prensa de Cames 45º", defaultTarget: "10-12" },
+                { name: "3. Extensions de Quàdriceps", defaultTarget: "12-15" },
+                { name: "4. Curl Isquiotibials", defaultTarget: "12-15" }
             ],
             torso: [
-                "1. Press de Banca",
-                "2. Rem en Pollea Baixa",
-                "3. Press Militar d'Espatlla",
-                "4. Jaló al Pit"
+                { name: "1. Press de Banca", defaultTarget: "8-10" },
+                { name: "2. Rem en Pollea Baixa", defaultTarget: "8-10" },
+                { name: "3. Press Militar d'Espatlla", defaultTarget: "10-12" },
+                { name: "4. Jaló al Pit", defaultTarget: "10-12" }
             ],
             fullbody: [
-                "1. Esquat Lliure",
-                "2. Press de Banca",
-                "3. Rem en Pollea Baixa",
-                "4. Planxa Abdominal"
+                { name: "1. Esquat Lliure", defaultTarget: "8-10" },
+                { name: "2. Press de Banca", defaultTarget: "8-10" },
+                { name: "3. Rem en Pollea Baixa", defaultTarget: "10-12" },
+                { name: "4. Planxa Abdominal", defaultTarget: "30s" }
             ]
         };
 
         let exerciseSetsCount = {};
         let workoutState = {};
 
-        // SOTA-SISTEMA D'ÀUDIO PER A IOS / IPHONE
+        // GESTIÓ DE L'ÀUDIO I PREVENCIÓ DE SUSPENSIÓ EN SEGON PLA
         let audioCtx = null;
+        let silentOscillator = null;
 
         function initAudio() {
             if (!audioCtx) {
@@ -429,9 +462,25 @@
             }
         }
 
-        // Desbloquejar AudioContext al primer toc de l'usuari a la pantalla
-        document.addEventListener('touchstart', initAudio, { once: true });
-        document.addEventListener('click', initAudio, { once: true });
+        // Truc per mantenir el processador actiu quan la pantalla s'apaga
+        function startKeepAliveAudio() {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                if (silentOscillator) {
+                    silentOscillator.stop();
+                }
+                silentOscillator = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.00001, audioCtx.currentTime); // volum pràcticament zero (mut)
+                silentOscillator.connect(gain);
+                gain.connect(audioCtx.destination);
+                silentOscillator.start();
+            } catch(e) {}
+        }
+
+        document.addEventListener('touchstart', () => { initAudio(); startKeepAliveAudio(); }, { once: true });
+        document.addEventListener('click', () => { initAudio(); startKeepAliveAudio(); }, { once: true });
 
         function playAppleStyleTone() {
             initAudio();
@@ -439,24 +488,22 @@
 
             const now = audioCtx.currentTime;
             
-            // Primer to (agut)
             const osc1 = audioCtx.createOscillator();
             const gain1 = audioCtx.createGain();
             osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(1046.50, now); // Nota C6
-            gain1.gain.setValueAtTime(0.3, now);
+            osc1.frequency.setValueAtTime(1046.50, now); 
+            gain1.gain.setValueAtTime(0.4, now);
             gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
             osc1.connect(gain1);
             gain1.connect(audioCtx.destination);
             osc1.start(now);
             osc1.stop(now + 0.3);
 
-            // Segon to (encara més agut, estil notificació iOS)
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
             osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(1567.98, now + 0.15); // Nota G6
-            gain2.gain.setValueAtTime(0.4, now + 0.15);
+            osc2.frequency.setValueAtTime(1567.98, now + 0.15); 
+            gain2.gain.setValueAtTime(0.5, now + 0.15);
             gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
             osc2.connect(gain2);
             gain2.connect(audioCtx.destination);
@@ -469,8 +516,14 @@
             if (!workoutState[sessionKey]) workoutState[sessionKey] = {};
 
             const exercises = sessionData[sessionKey];
-            exercises.forEach((exName, exIndex) => {
+            exercises.forEach((ex, exIndex) => {
                 let totalSets = exerciseSetsCount[sessionKey] ? exerciseSetsCount[sessionKey][exIndex] : 3;
+                
+                let targetElem = document.getElementById(`target_${exIndex}`);
+                if(targetElem) {
+                    workoutState[sessionKey][`target_${exIndex}`] = targetElem.value;
+                }
+
                 for(let s = 1; s <= totalSets; s++) {
                     let wElem = document.getElementById(`w_${exIndex}_${s}`);
                     let rElem = document.getElementById(`r_${exIndex}_${s}`);
@@ -501,12 +554,22 @@
             }
 
             let html = '';
-            exercises.forEach((exName, exIndex) => {
+            exercises.forEach((ex, exIndex) => {
                 let totalSets = exerciseSetsCount[sessionKey][exIndex];
+                
+                let savedTarget = (workoutState[sessionKey] && workoutState[sessionKey][`target_${exIndex}`]) 
+                    ? workoutState[sessionKey][`target_${exIndex}`] 
+                    : ex.defaultTarget;
                 
                 html += `
                     <div class="exercise-block">
-                        <div class="exercise-title">${exName}</div>
+                        <div class="exercise-header">
+                            <div class="exercise-title">${ex.name}</div>
+                            <div class="target-reps-container">
+                                <label>Obj:</label>
+                                <input type="text" class="target-reps-input" id="target_${exIndex}" value="${savedTarget}" placeholder="Reps">
+                            </div>
+                        </div>
                         <div id="sets-container_${exIndex}">
                 `;
 
@@ -544,7 +607,8 @@
         let currentSelectedSeconds = 90;
 
         function completeSet(exIndex, setNum) {
-            initAudio(); // Assegurar que l'àudio està llest al clicar el tic
+            initAudio(); 
+            startKeepAliveAudio();
             const btn = document.getElementById(`btn_${exIndex}_${setNum}`);
             btn.classList.toggle('completed');
             
@@ -553,13 +617,14 @@
             }
         }
 
-        // GESTIÓ DEL TEMPORITZADOR RESILIENT A PANTALLA BLOQUEJADA
+        // TEMPORITZADOR BASAT EN HORA REAL (RESISTENT A PANTALLA TANCADA)
         let timerInterval;
         let targetEndTime = null;
 
         function startTimer(seconds) {
             clearInterval(timerInterval);
             initAudio();
+            startKeepAliveAudio();
             
             targetEndTime = Date.now() + (seconds * 1000);
             document.getElementById('timer-container').style.display = 'block';
@@ -627,12 +692,14 @@
             const setsCountArr = exerciseSetsCount[sessionKey] || exercises.map(() => 3);
             
             let summarySets = [];
-            exercises.forEach((exName, exIndex) => {
+            exercises.forEach((ex, exIndex) => {
                 let totalSets = setsCountArr[exIndex];
+                let targetRep = document.getElementById(`target_${exIndex}`) ? document.getElementById(`target_${exIndex}`).value : ex.defaultTarget;
+                
                 for(let s = 1; s <= totalSets; s++) {
                     let saved = workoutState[sessionKey] ? workoutState[sessionKey][`${exIndex}_${s}`] : null;
                     if(saved && (saved.w || saved.r || saved.n)) {
-                        summarySets.push(`${exName} (S${s}): ${saved.w ? saved.w+'kg' : '-'} × ${saved.r ? saved.r+'reps' : '-'} ${saved.n ? '['+saved.n+']' : ''}`);
+                        summarySets.push(`${ex.name} [Obj: ${targetRep}] (S${s}): ${saved.w ? saved.w+'kg' : '-'} × ${saved.r ? saved.r+'reps' : '-'} ${saved.n ? '['+saved.n+']' : ''}`);
                     }
                 }
             });
