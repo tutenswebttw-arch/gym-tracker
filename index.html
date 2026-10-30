@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jordi APP GYM - TTW</title>
+    <title>JORDI GYM TTW</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -293,8 +293,8 @@
 <body>
 
     <header>
-        <h1>GYM PRO TRACKER</h1>
-        <p>Control Total • Descans 90s</p>
+        <h1>JORDI GYM TTW</h1>
+        <p>El teu Diari d'Entrenament Professional</p>
     </header>
 
     <!-- PESTANYA 1: ENTRENAMENT -->
@@ -304,9 +304,14 @@
             <div class="form-group">
                 <label for="session-select">Tipus de Rutina</label>
                 <select id="session-select" onchange="renderWorkoutSession()">
+                    <option value="royalcama">CAMES Royal</option>
+                    <option value="royalpress">PRESS Royal</option>
+                    <option value="royalpit">PIT Royal</option>
                     <option value="push">Sessió Push (Pit, Espatlla, Tríceps)</option>
                     <option value="pull">Sessió Pull (Esquena, Bíceps)</option>
                     <option value="legs">Sessió Cames (Quàdriceps, Isquis, Cama)</option>
+                    <option value="torso">Sessió Torso (Bàsics Pit/Esquena)</option>
+                    <option value="fullbody">Sessió Full Body (Global)</option>
                 </select>
             </div>
         </div>
@@ -330,6 +335,7 @@
             <button onclick="setRestTime(120)" id="btn-120">120s</button>
             <button onclick="setRestTime(180)" id="btn-180">180s</button>
             <button onclick="addTime(-15)">-15s</button>
+            <button onclick="addTime(-30)">-30s</button>
             <button onclick="addTime(15)">+15s</button>
         </div>
     </div>
@@ -360,12 +366,36 @@
     </nav>
 
     <script>
+        /* 
+           ====================================================
+           COM MODIFICAR O AFEGIR SESSIONS I EXERCICIS:
+           Pots canviar el nom dels exercicis o afegir-ne de nous 
+           simplement editant el text de dintre de les cometes de 
+           cadascuna de les sessions d'aquí sota.
+           ====================================================
+        */
         const sessionData = {
-            push: [
-                "1. Press de Banca",
-                "2. Press Inclinat amb Mancornes",
-                "3. Obertures en Pollea / Pit",
-                "4. Extensions de Tríceps"
+            
+            royalpit: [
+                "1. Press Banca ",
+                "2. Press Inclinat",
+                "3. Creuament politges superior",
+                "4. Extensió Tríceps",
+                "5. Elevacions Laterals"
+            ],
+            royalcama: [
+                "1. Sentadilla Cinturo / Sentadilla barra fixa",
+                "2. Búlgares",
+                "3. Femoral Sentat",
+                "4. Hak",
+                "5. Adductors"
+            ],
+            royalpress: [
+                "1. Elevació Barra gran (hombros)",
+                "2. Press Manuelles",
+                "3. Rem una mà",
+                "4. Tracció pit barra ampla",
+                "5. Elevacions Laterals"
             ],
             pull: [
                 "1. Dominades o Jaló al Pit",
@@ -378,6 +408,18 @@
                 "2. Prensa de Cames 45º",
                 "3. Extensions de Quàdriceps",
                 "4. Curl Isquiotibials"
+            ],
+            torso: [
+                "1. Press de Banca",
+                "2. Rem en Pollea Baixa",
+                "3. Press Militar d'Espatlla",
+                "4. Jaló al Pit"
+            ],
+            fullbody: [
+                "1. Esquat Lliure",
+                "2. Press de Banca",
+                "3. Rem en Pollea Baixa",
+                "4. Planxa Abdominal"
             ]
         };
 
@@ -417,7 +459,8 @@
             const exercises = sessionData[sessionKey];
 
             if(!exerciseSetsCount[sessionKey]) {
-                exerciseSetsCount[sessionKey] = [3, 3, 3, 3];
+                // Per defecte 3 sèries per a cada exercici de la sessió seleccionada
+                exerciseSetsCount[sessionKey] = exercises.map(() => 3);
             }
 
             let html = '';
@@ -455,7 +498,7 @@
         }
 
         function addSet(exIndex) {
-            saveCurrentInputsToState(); // Guardar abans d'incrementar
+            saveCurrentInputsToState();
             const sessionKey = document.getElementById('session-select').value;
             exerciseSetsCount[sessionKey][exIndex]++;
             renderWorkoutSession();
@@ -503,7 +546,7 @@
                 updateTimerDisplay();
                 if(timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    playBeep(); // Només sonarà el so, sense cap missatge de text
+                    playBeep();
                     stopTimer();
                 }
             }, 1000);
@@ -545,7 +588,7 @@
             const sessionKey = document.getElementById('session-select').value;
             const sessionType = sessionKey.toUpperCase();
             const exercises = sessionData[sessionKey];
-            const setsCountArr = exerciseSetsCount[sessionKey] || [3,3,3,3];
+            const setsCountArr = exerciseSetsCount[sessionKey] || exercises.map(() => 3);
             
             let summarySets = [];
             exercises.forEach((exName, exIndex) => {
