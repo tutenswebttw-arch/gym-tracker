@@ -449,7 +449,11 @@
         let exerciseSetsCount = {};
         let workoutState = {};
 
-        // GESTIÓ DE L'ÀUDIO I PREVENCIÓ DE SUSPENSIÓ EN SEGON PLA
+        // Demanar permisos de notificació nativa al carregar
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
         let audioCtx = null;
         let silentOscillator = null;
 
@@ -462,7 +466,6 @@
             }
         }
 
-        // Truc per mantenir el processador actiu quan la pantalla s'apaga
         function startKeepAliveAudio() {
             initAudio();
             if (!audioCtx) return;
@@ -472,7 +475,7 @@
                 }
                 silentOscillator = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.00001, audioCtx.currentTime); // volum pràcticament zero (mut)
+                gain.gain.setValueAtTime(0.00001, audioCtx.currentTime);
                 silentOscillator.connect(gain);
                 gain.connect(audioCtx.destination);
                 silentOscillator.start();
@@ -509,6 +512,22 @@
             gain2.connect(audioCtx.destination);
             osc2.start(now + 0.15);
             osc2.stop(now + 0.5);
+        }
+
+        function triggerNativeNotification() {
+            playAppleStyleTone();
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    new Notification("JORDI GYM TTW", {
+                        body: "⏰ Temps de descans finalitzat! A per la següent sèrie.",
+                        icon: "",
+                        tag: "gym-timer",
+                        renotify: true
+                    });
+                } catch (err) {
+                    console.log("No s'ha pogut llançar la notificació nativa", err);
+                }
+            }
         }
 
         function saveCurrentInputsToState() {
@@ -617,7 +636,6 @@
             }
         }
 
-        // TEMPORITZADOR BASAT EN HORA REAL (RESISTENT A PANTALLA TANCADA)
         let timerInterval;
         let targetEndTime = null;
 
@@ -637,7 +655,7 @@
                 if (remainingMs <= 0) {
                     clearInterval(timerInterval);
                     updateTimerDisplay(0);
-                    playAppleStyleTone();
+                    triggerNativeNotification(); // Fa saltar el so i la notificació del sistema
                     stopTimer();
                 } else {
                     updateTimerDisplay(Math.ceil(remainingMs / 1000));
