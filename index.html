@@ -35,7 +35,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         header h1 {
@@ -47,19 +47,6 @@
         header p {
             color: var(--text-muted);
             font-size: 0.9rem;
-        }
-
-        .notif-bar {
-            background-color: rgba(34, 197, 94, 0.1);
-            border: 1px dashed var(--primary);
-            color: var(--primary);
-            text-align: center;
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-            cursor: pointer;
-            font-weight: bold;
         }
 
         .card {
@@ -336,11 +323,6 @@
         <p>El teu Diari d'Entrenament Professional</p>
     </header>
 
-    <!-- Botó explícit per activar permisos d'àudio i notificacions a iOS/Android -->
-    <div class="notif-bar" id="permission-bar" onclick="requestAppPermissions()">
-        🔔 Clica aquí per activar So i Avisos en segon pla
-    </div>
-
     <!-- PESTANYA 1: ENTRENAMENT -->
     <div id="tab-workout" class="tab-content active">
         <div class="card">
@@ -468,7 +450,6 @@
         let workoutState = {};
 
         let audioCtx = null;
-        let silentOscillator = null;
 
         function initAudio() {
             if (!audioCtx) {
@@ -479,41 +460,8 @@
             }
         }
 
-        function startKeepAliveAudio() {
-            initAudio();
-            if (!audioCtx) return;
-            try {
-                if (silentOscillator) {
-                    silentOscillator.stop();
-                }
-                silentOscillator = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.00001, audioCtx.currentTime);
-                silentOscillator.connect(gain);
-                gain.connect(audioCtx.destination);
-                silentOscillator.start();
-            } catch(e) {}
-        }
-
-        // Funció que s'activa en clicar el botó superior
-        function requestAppPermissions() {
-            initAudio();
-            startKeepAliveAudio();
-            
-            if ("Notification" in window) {
-                Notification.requestPermission().then(permission => {
-                    const bar = document.getElementById('permission-bar');
-                    if (permission === "granted") {
-                        bar.style.backgroundColor = "rgba(34, 197, 94, 0.3)";
-                        bar.textContent = "✅ So i Avisos Activats Correctament!";
-                    } else {
-                        bar.textContent = "⚠️ Has denegat els permisos de notificació.";
-                    }
-                });
-            } else {
-                alert("El teu navegador no suporta notificacions en segon pla, però l'àudio funcionarà.");
-            }
-        }
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
 
         function playAppleStyleTone() {
             initAudio();
@@ -542,21 +490,6 @@
             gain2.connect(audioCtx.destination);
             osc2.start(now + 0.15);
             osc2.stop(now + 0.6);
-        }
-
-        function triggerNativeNotification() {
-            playAppleStyleTone();
-            if ("Notification" in window && Notification.permission === "granted") {
-                try {
-                    new Notification("JORDI GYM TTW", {
-                        body: "⏰ Temps de descans finalitzat! A per la següent sèrie.",
-                        tag: "gym-timer",
-                        renotify: true
-                    });
-                } catch (err) {
-                    console.log("Error al llançar notificació", err);
-                }
-            }
         }
 
         function saveCurrentInputsToState() {
@@ -656,7 +589,6 @@
 
         function completeSet(exIndex, setNum) {
             initAudio(); 
-            startKeepAliveAudio();
             const btn = document.getElementById(`btn_${exIndex}_${setNum}`);
             btn.classList.toggle('completed');
             
@@ -671,7 +603,6 @@
         function startTimer(seconds) {
             clearInterval(timerInterval);
             initAudio();
-            startKeepAliveAudio();
             
             targetEndTime = Date.now() + (seconds * 1000);
             document.getElementById('timer-container').style.display = 'block';
@@ -684,7 +615,7 @@
                 if (remainingMs <= 0) {
                     clearInterval(timerInterval);
                     updateTimerDisplay(0);
-                    triggerNativeNotification();
+                    playAppleStyleTone();
                     stopTimer();
                 } else {
                     updateTimerDisplay(Math.ceil(remainingMs / 1000));
