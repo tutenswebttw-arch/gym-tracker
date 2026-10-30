@@ -101,13 +101,39 @@
             margin-bottom: 15px;
         }
 
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
         .exercise-title {
             font-size: 1.05rem;
             font-weight: bold;
             color: var(--primary);
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 5px;
+        }
+
+        .target-reps-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .target-reps-container label {
+            font-size: 0.75rem;
+            margin-bottom: 0;
+            color: var(--text-muted);
+        }
+
+        .target-reps-input {
+            width: 75px !important;
+            padding: 4px 6px !important;
+            font-size: 0.85rem !important;
+            text-align: center;
+            background-color: var(--card-bg) !important;
         }
 
         .set-row {
@@ -367,59 +393,61 @@
 
     <script>
         /* 
-           ====================================================
-           COM MODIFICAR O AFEGIR SESSIONS I EXERCICIS:
-           Pots canviar el nom dels exercicis o afegir-ne de nous 
-           simplement editant el text de dintre de les cometes de 
-           cadascuna de les sessions d'aquí sota.
-           ====================================================
+           Configuració d'exercicis amb el seu objectiu de repeticions predeterminat.
+           Pots modificar directament aquí els valors (per exemple, "8-10" o "12-15") 
+           o canviar-ho directament des de la pantalla de l'app abans d'entrenar.
         */
         const sessionData = {
-            
             royalpit: [
-                "1. Press Banca ",
-                "2. Press Inclinat",
-                "3. Creuament politges superior",
-                "4. Extensió Tríceps",
-                "5. Elevacions Laterals"
+                { name: "1. Press Banca", defaultTarget: "8-10" },
+                { name: "2. Press Inclinat", defaultTarget: "10-12" },
+                { name: "3. Creuament politges superior", defaultTarget: "12-15" },
+                { name: "4. Extensió Tríceps", defaultTarget: "12-15" },
+                { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
             ],
             royalcama: [
-                "1. Sentadilla Cinturo / Sentadilla barra fixa",
-                "2. Búlgares",
-                "3. Femoral Sentat",
-                "4. Hak",
-                "5. Adductors"
+                { name: "1. Sentadilla Cinturo / Sentadilla barra fixa", defaultTarget: "8-10" },
+                { name: "2. Búlgares", defaultTarget: "10-12" },
+                { name: "3. Femoral Sentat", defaultTarget: "12-15" },
+                { name: "4. Hak", defaultTarget: "10-12" },
+                { name: "5. Adductors", defaultTarget: "12-15" }
             ],
             royalpress: [
-                "1. Elevació Barra gran (hombros)",
-                "2. Press Manuelles",
-                "3. Rem una mà",
-                "4. Tracció pit barra ampla",
-                "5. Elevacions Laterals"
+                { name: "1. Elevació Barra gran (hombros)", defaultTarget: "8-10" },
+                { name: "2. Press Manuelles", defaultTarget: "10-12" },
+                { name: "3. Rem una mà", defaultTarget: "10-12" },
+                { name: "4. Tracció pit barra ampla", defaultTarget: "10-12" },
+                { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
+            ],
+            push: [
+                { name: "1. Press de Banca", defaultTarget: "8-10" },
+                { name: "2. Press Inclinat amb Mancornes", defaultTarget: "10-12" },
+                { name: "3. Obertures en Pollea / Pit", defaultTarget: "12-15" },
+                { name: "4. Extensions de Tríceps", defaultTarget: "12-15" }
             ],
             pull: [
-                "1. Dominades o Jaló al Pit",
-                "2. Rem en Pollea Baixa",
-                "3. Rem amb Mancorna a una mà",
-                "4. Curl de Bíceps amb Barra"
+                { name: "1. Dominades o Jaló al Pit", defaultTarget: "8-10" },
+                { name: "2. Rem en Pollea Baixa", defaultTarget: "10-12" },
+                { name: "3. Rem amb Mancorna a una mà", defaultTarget: "10-12" },
+                { name: "4. Curl de Bíceps amb Barra", defaultTarget: "12-15" }
             ],
             legs: [
-                "1. Esquat Lliure o Multipower",
-                "2. Prensa de Cames 45º",
-                "3. Extensions de Quàdriceps",
-                "4. Curl Isquiotibials"
+                { name: "1. Esquat Lliure o Multipower", defaultTarget: "8-10" },
+                { name: "2. Prensa de Cames 45º", defaultTarget: "10-12" },
+                { name: "3. Extensions de Quàdriceps", defaultTarget: "12-15" },
+                { name: "4. Curl Isquiotibials", defaultTarget: "12-15" }
             ],
             torso: [
-                "1. Press de Banca",
-                "2. Rem en Pollea Baixa",
-                "3. Press Militar d'Espatlla",
-                "4. Jaló al Pit"
+                { name: "1. Press de Banca", defaultTarget: "8-10" },
+                { name: "2. Rem en Pollea Baixa", defaultTarget: "8-10" },
+                { name: "3. Press Militar d'Espatlla", defaultTarget: "10-12" },
+                { name: "4. Jaló al Pit", defaultTarget: "10-12" }
             ],
             fullbody: [
-                "1. Esquat Lliure",
-                "2. Press de Banca",
-                "3. Rem en Pollea Baixa",
-                "4. Planxa Abdominal"
+                { name: "1. Esquat Lliure", defaultTarget: "8-10" },
+                { name: "2. Press de Banca", defaultTarget: "8-10" },
+                { name: "3. Rem en Pollea Baixa", defaultTarget: "10-12" },
+                { name: "4. Planxa Abdominal", defaultTarget: "30s" }
             ]
         };
 
@@ -431,8 +459,15 @@
             if (!workoutState[sessionKey]) workoutState[sessionKey] = {};
 
             const exercises = sessionData[sessionKey];
-            exercises.forEach((exName, exIndex) => {
+            exercises.forEach((ex, exIndex) => {
                 let totalSets = exerciseSetsCount[sessionKey] ? exerciseSetsCount[sessionKey][exIndex] : 3;
+                
+                // Guardar objectiu de reps personalitzat
+                let targetElem = document.getElementById(`target_${exIndex}`);
+                if(targetElem) {
+                    workoutState[sessionKey][`target_${exIndex}`] = targetElem.value;
+                }
+
                 for(let s = 1; s <= totalSets; s++) {
                     let wElem = document.getElementById(`w_${exIndex}_${s}`);
                     let rElem = document.getElementById(`r_${exIndex}_${s}`);
@@ -459,17 +494,26 @@
             const exercises = sessionData[sessionKey];
 
             if(!exerciseSetsCount[sessionKey]) {
-                // Per defecte 3 sèries per a cada exercici de la sessió seleccionada
                 exerciseSetsCount[sessionKey] = exercises.map(() => 3);
             }
 
             let html = '';
-            exercises.forEach((exName, exIndex) => {
+            exercises.forEach((ex, exIndex) => {
                 let totalSets = exerciseSetsCount[sessionKey][exIndex];
+                
+                let savedTarget = (workoutState[sessionKey] && workoutState[sessionKey][`target_${exIndex}`]) 
+                    ? workoutState[sessionKey][`target_${exIndex}`] 
+                    : ex.defaultTarget;
                 
                 html += `
                     <div class="exercise-block">
-                        <div class="exercise-title">${exName}</div>
+                        <div class="exercise-header">
+                            <div class="exercise-title">${ex.name}</div>
+                            <div class="target-reps-container">
+                                <label>Obj:</label>
+                                <input type="text" class="target-reps-input" id="target_${exIndex}" value="${savedTarget}" placeholder="Reps">
+                            </div>
+                        </div>
                         <div id="sets-container_${exIndex}">
                 `;
 
@@ -591,12 +635,14 @@
             const setsCountArr = exerciseSetsCount[sessionKey] || exercises.map(() => 3);
             
             let summarySets = [];
-            exercises.forEach((exName, exIndex) => {
+            exercises.forEach((ex, exIndex) => {
                 let totalSets = setsCountArr[exIndex];
+                let targetRep = document.getElementById(`target_${exIndex}`) ? document.getElementById(`target_${exIndex}`).value : ex.defaultTarget;
+                
                 for(let s = 1; s <= totalSets; s++) {
                     let saved = workoutState[sessionKey] ? workoutState[sessionKey][`${exIndex}_${s}`] : null;
                     if(saved && (saved.w || saved.r || saved.n)) {
-                        summarySets.push(`${exName} (S${s}): ${saved.w ? saved.w+'kg' : '-'} × ${saved.r ? saved.r+'reps' : '-'} ${saved.n ? '['+saved.n+']' : ''}`);
+                        summarySets.push(`${ex.name} [Obj: ${targetRep}] (S${s}): ${saved.w ? saved.w+'kg' : '-'} × ${saved.r ? saved.r+'reps' : '-'} ${saved.n ? '['+saved.n+']' : ''}`);
                     }
                 }
             });
@@ -629,7 +675,7 @@
             container.innerHTML = historyData.slice(0, 10).map(item => `
                 <div class="history-item">
                     <strong style="color: var(--primary);">[${item.sessionType}]</strong> <span style="font-size:0.75rem; color:var(--text-muted);">${item.date}</span><br>
-                    <div style="margin-top: 5px; font-size: 0.85rem; color: #cbd5e1;">
+                    <div style="margin-top: 5.5px; font-size: 0.85rem; color: #cbd5e1;">
                         ${item.details.map(d => `• ${d}`).join('<br>')}
                     </div>
                 </div>
