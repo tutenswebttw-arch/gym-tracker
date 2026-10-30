@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JORDI GYM TTW</title>
+    
+    <!-- Configuració PWA per a iOS i Android -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JORDI GYM TTW">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -709,7 +716,7 @@
 
             container.innerHTML = historyData.slice(0, 10).map(item => `
                 <div class="history-item">
-                    <strong style="color: var(--primary);">[${item.sessionType}]</strong> <span style="font-size:0.75rem; color:var(--text-muted);">${item.date}</span><br>
+                    <strong style="color: var(--primary);">[${item.sessionType}]</strong> <span style="font-size:0.75rem; color:var::text-muted;>${item.date}</span><br>
                     <div style="margin-top: 5px; font-size: 0.85rem; color: #cbd5e1;">
                         ${item.details.map(d => `• ${d}`).join('<br>')}
                     </div>
@@ -723,6 +730,15 @@
             
             document.getElementById('tab-' + tabName).classList.add('active');
             document.getElementById('nav-' + tabName).classList.add('active');
+        }
+
+        // Registre del Service Worker per a PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => { console.log('Service Worker registrat amb èxit:', reg.scope); })
+                    .catch((err) => { console.log('Error al registrar el Service Worker:', err); });
+            });
         }
 
         renderWorkoutSession();
