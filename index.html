@@ -456,7 +456,7 @@
 
     <!-- PESTANYA 4: EVOLUCIÓ FÍSICA -->
     <div id="tab-evolution" class="tab-content">
-        <!-- 1. FORMULARI D'INGRESTRAR DADES MENSUALS -->
+        <!-- 1. FORMULARI D'INGRESSAR DADES MENSUALS -->
         <div class="card">
             <h2>📝 Nou Registre Mensual</h2>
             <div class="form-group">
@@ -483,23 +483,45 @@
                     <input type="number" step="0.1" id="evo-muscle" placeholder="Ex: 42.0">
                 </div>
             </div>
+
+            <!-- FOTOS DE LES 3 POSICIONS -->
+            <hr style="border:0; border-top:1px solid var(--border); margin: 15px 0;">
+            <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 10px;">📸 Fotografies de Control</h3>
+            
             <div class="form-group">
-                <label for="evo-photo">Fotografia de Control:</label>
-                <input type="file" id="evo-photo" accept="image/*">
+                <label for="evo-photo-perfil">Foto Perfil:</label>
+                <input type="file" id="evo-photo-perfil" accept="image/*">
             </div>
-            <button class="main-btn" onclick="saveEvolutionRecord()">Guardar Registre 📸</button>
+            <div class="form-group">
+                <label for="evo-photo-cara">Foto Cara:</label>
+                <input type="file" id="evo-photo-cara" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label for="evo-photo-esquena">Foto Esquena:</label>
+                <input type="file" id="evo-photo-esquena" accept="image/*">
+            </div>
+
+            <button class="main-btn" onclick="saveEvolutionRecord()">Guardar Registre 💾</button>
         </div>
 
         <!-- 2. COMPARADOR DE FOTOS -->
         <div class="card">
             <h2>🔍 Comparador Visual</h2>
+            <div class="form-group">
+                <label for="select-photo-type">Posició a Comparar:</label>
+                <select id="select-photo-type" onchange="updatePhotoComparison()">
+                    <option value="perfil">Perfil</option>
+                    <option value="cara">Cara</option>
+                    <option value="esquena">Esquena</option>
+                </select>
+            </div>
             <div class="grid-2col">
                 <div class="form-group">
-                    <label>Foto 1 (Abans):</label>
+                    <label>Data 1 (Abans):</label>
                     <select id="select-photo-1" onchange="updatePhotoComparison()"></select>
                 </div>
                 <div class="form-group">
-                    <label>Foto 2 (Després):</label>
+                    <label>Data 2 (Després):</label>
                     <select id="select-photo-2" onchange="updatePhotoComparison()"></select>
                 </div>
             </div>
@@ -916,12 +938,9 @@
         }
 
         /* ----------------------------------------------------
-           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA
+           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA (3 FOTOS)
         ---------------------------------------------------- */
         let evolutionData = JSON.parse(localStorage.getItem('gym_evolution')) || [];
-
-        // Data d'avui per defecte al formulari
-        document.getElementById('evo-date').valueToDate = new Date();
         document.getElementById('evo-date').value = new Date().toISOString().substring(0, 10);
 
         function saveEvolutionRecord() {
@@ -930,47 +949,80 @@
             const fat = parseFloat(document.getElementById('evo-fat').value) || null;
             const water = parseFloat(document.getElementById('evo-water').value) || null;
             const muscle = parseFloat(document.getElementById('evo-muscle').value) || null;
-            const photoInput = document.getElementById('evo-photo');
+
+            const fPerfil = document.getElementById('evo-photo-perfil');
+            const fCara = document.getElementById('evo-photo-cara');
+            const fEsquena = document.getElementById('evo-photo-esquena');
 
             if (!date) {
                 alert('Si us plau, selecciona una data.');
                 return;
             }
 
-            if (photoInput.files && photoInput.files[0]) {
+            let photos = { perfil: null, cara: null, esquena: null };
+            let pendingReads = 0;
+
+            function checkDone() {
+                if (pendingReads === 0) {
+                    storeEvolutionEntry(date, weight, fat, water, muscle, photos);
+                }
+            }
+
+            if (fPerfil.files && fPerfil.files[0]) {
+                pendingReads++;
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const photoBase64 = e.target.result;
-                    storeEvolutionEntry(date, weight, fat, water, muscle, photoBase64);
-                };
-                reader.readAsDataURL(photoInput.files[0]);
-            } else {
-                storeEvolutionEntry(date, weight, fat, water, muscle, null);
+                reader.onload = function(e) { photos.perfil = e.target.result; pendingReads--; checkDone(); };
+                reader.readAsDataURL(fPerfil.files[0]);
+            }
+
+            if (fCara.files && fCara.files[0]) {
+                pendingReads++;
+                const reader = new FileReader();
+                reader.onload = function(e) { photos.cara = e.target.result; pendingReads--; checkDone(); };
+                reader.readAsDataURL(fCara.files[0]);
+            }
+
+            if (fEsquena.files && fEsquena.files[0]) {
+                pendingReads++;
+                const reader = new FileReader();
+                reader.onload = function(e) { photos.esquena = e.target.result; pendingReads--; checkDone(); };
+                reader.readAsDataURL(fEsquena.files[0]);
+            }
+
+            if (pendingReads === 0) {
+                storeEvolutionEntry(date, weight, fat, water, muscle, photos);
             }
         }
 
-        function storeEvolutionEntry(date, weight, fat, water, muscle, photo) {
-            const record = { date, weight, fat, water, muscle, photo };
-            
-            // Si ja existeix un registre per aquesta data, l'actualitzem
+        function storeEvolutionEntry(date, weight, fat, water, muscle, photos) {
             const existingIndex = evolutionData.findIndex(item => item.date === date);
+            
+            let record = {
+                date, weight, fat, water, muscle,
+                photos: photos || { perfil: null, cara: null, esquena: null }
+            };
+
+            // Si ja existia i no s'han pujat noves fotos en aquest guardat, mantenir les anteriors
             if (existingIndex !== -1) {
+                if (!photos.perfil) record.photos.perfil = evolutionData[existingIndex].photos.perfil;
+                if (!photos.cara) record.photos.cara = evolutionData[existingIndex].photos.cara;
+                if (!photos.esquena) record.photos.esquena = evolutionData[existingIndex].photos.esquena;
                 evolutionData[existingIndex] = record;
             } else {
                 evolutionData.push(record);
             }
 
-            // Ordenar per data ascendent
             evolutionData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
             localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
-            
-            // Netejar camps del formulari
+
+            // Netejar inputs
             document.getElementById('evo-weight').value = '';
             document.getElementById('evo-fat').value = '';
             document.getElementById('evo-water').value = '';
             document.getElementById('evo-muscle').value = '';
-            document.getElementById('evo-photo').value = '';
+            document.getElementById('evo-photo-perfil').value = '';
+            document.getElementById('evo-photo-cara').value = '';
+            document.getElementById('evo-photo-esquena').value = '';
 
             alert('📸 Registre d\'evolució guardat amb èxit!');
             updateEvolutionUI();
@@ -1006,28 +1058,25 @@
             const sel1 = document.getElementById('select-photo-1');
             const sel2 = document.getElementById('select-photo-2');
 
-            sel1.innerHTML = '<option value="">-- Selecciona Data --</option>';
-            sel2.innerHTML = '<option value="">-- Selecciona Data --</option>';
+            sel1.innerHTML = '<option value="">-- Data 1 --</option>';
+            sel2.innerHTML = '<option value="">-- Data 2 --</option>';
 
             evolutionData.forEach((item, index) => {
-                if (item.photo) {
-                    sel1.innerHTML += `<option value="${index}">${item.date}</option>`;
-                    sel2.innerHTML += `<option value="${index}">${item.date}</option>`;
-                }
+                sel1.innerHTML += `<option value="${index}">${item.date}</option>`;
+                sel2.innerHTML += `<option value="${index}">${item.date}</option>`;
             });
 
-            // Auto-seleccionar la primera i última foto si n'hi ha
-            const photoEntries = evolutionData.filter(item => item.photo);
-            if (photoEntries.length >= 2) {
+            if (evolutionData.length >= 2) {
                 sel1.selectedIndex = 1;
-                sel2.selectedIndex = photoEntries.length;
-            } else if (photoEntries.length === 1) {
+                sel2.selectedIndex = evolutionData.length;
+            } else if (evolutionData.length === 1) {
                 sel1.selectedIndex = 1;
             }
             updatePhotoComparison();
         }
 
         function updatePhotoComparison() {
+            const type = document.getElementById('select-photo-type').value;
             const idx1 = document.getElementById('select-photo-1').value;
             const idx2 = document.getElementById('select-photo-2').value;
 
@@ -1039,8 +1088,8 @@
             const noImg2 = document.getElementById('no-img-2');
             const label2 = document.getElementById('label-photo-2');
 
-            if (idx1 !== "" && evolutionData[idx1] && evolutionData[idx1].photo) {
-                img1.src = evolutionData[idx1].photo;
+            if (idx1 !== "" && evolutionData[idx1] && evolutionData[idx1].photos && evolutionData[idx1].photos[type]) {
+                img1.src = evolutionData[idx1].photos[type];
                 img1.style.display = 'block';
                 noImg1.style.display = 'none';
                 label1.textContent = evolutionData[idx1].date;
@@ -1050,8 +1099,8 @@
                 label1.textContent = '-';
             }
 
-            if (idx2 !== "" && evolutionData[idx2] && evolutionData[idx2].photo) {
-                img2.src = evolutionData[idx2].photo;
+            if (idx2 !== "" && evolutionData[idx2] && evolutionData[idx2].photos && evolutionData[idx2].photos[type]) {
+                img2.src = evolutionData[idx2].photos[type];
                 img2.style.display = 'block';
                 noImg2.style.display = 'none';
                 label2.textContent = evolutionData[idx2].date;
@@ -1077,28 +1126,9 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: 'Pes (kg)',
-                            data: weights,
-                            borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.3
-                        },
-                        {
-                            label: '% Greix',
-                            data: fats,
-                            borderColor: '#ef4444',
-                            borderWidth: 2,
-                            tension: 0.3
-                        },
-                        {
-                            label: '% Múscul',
-                            data: muscles,
-                            borderColor: '#3b82f6',
-                            borderWidth: 2,
-                            tension: 0.3
-                        }
+                        { label: 'Pes (kg)', data: weights, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 2, tension: 0.3 },
+                        { label: '% Greix', data: fats, borderColor: '#ef4444', borderWidth: 2, tension: 0.3 },
+                        { label: '% Múscul', data: muscles, borderColor: '#3b82f6', borderWidth: 2, tension: 0.3 }
                     ]
                 },
                 options: {
@@ -1129,7 +1159,6 @@
         renderSessionBoxes();
         updateHistoryUI();
 
-        // Registre del Service Worker per a PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
