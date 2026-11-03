@@ -74,7 +74,6 @@
             gap: 8px;
         }
 
-        /* CAIXETES D'ENTRENAMENT (Graella) */
         .workout-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -114,7 +113,6 @@
             line-height: 1.4;
         }
 
-        /* Botó per tornar enrere a la llista de caixetes */
         .btn-back {
             background-color: var(--border);
             color: var(--text-main);
@@ -128,10 +126,6 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-        }
-
-        .btn-back:hover {
-            background-color: #475569;
         }
 
         .form-group {
@@ -242,7 +236,6 @@
             border-radius: 6px;
             font-size: 1rem;
             cursor: pointer;
-            transition: all 0.2s;
             text-align: center;
         }
 
@@ -263,11 +256,6 @@
             cursor: pointer;
             margin-top: 8px;
             font-weight: bold;
-            transition: background 0.2s;
-        }
-
-        .btn-add-set:hover {
-            background-color: rgba(34, 197, 94, 0.1);
         }
 
         button.main-btn {
@@ -280,15 +268,9 @@
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.2s;
             margin-top: 10px;
         }
 
-        button.main-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        /* Timer de descans flotant */
         #timer-container {
             position: fixed;
             bottom: 60px;
@@ -336,7 +318,6 @@
             font-weight: bold;
         }
 
-        /* Navegació Inferior */
         nav {
             position: fixed;
             bottom: 0;
@@ -346,7 +327,7 @@
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
-            padding: 10px 0;
+            padding: 8px 0;
             z-index: 1000;
         }
 
@@ -354,15 +335,14 @@
             background: none;
             color: var(--text-muted);
             border: none;
-            font-size: 0.8rem;
-            margin: 0;
+            font-size: 0.75rem;
             padding: 5px;
-            font-weight: normal;
             cursor: pointer;
         }
 
         nav button.active {
             color: var(--primary);
+            font-weight: bold;
         }
 
         .tab-content {
@@ -381,6 +361,37 @@
             font-size: 0.9rem;
             border-left: 4px solid var(--primary);
         }
+
+        /* ESTILS PER A LA PESTANYA D'EVOLUCIÓ */
+        .photo-comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .photo-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-top: 6px;
+            background-color: #334155;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -392,28 +403,19 @@
 
     <!-- PESTANYA 1: ENTRENAMENT -->
     <div id="tab-workout" class="tab-content active">
-        
-        <!-- VISTA 1: SELECCIÓ DE CAIXETES DE SESSIONS -->
         <div id="session-selector-view">
             <h2 style="margin-bottom: 15px;">🏋️ Selecciona una Sessió</h2>
-            <div class="workout-grid" id="workout-boxes-container">
-                <!-- Les caixetes es generaran automàticament aquí -->
-            </div>
+            <div class="workout-grid" id="workout-boxes-container"></div>
         </div>
 
-        <!-- VISTA 2: DINS DE LA SESSIÓ (ENTRENAMENT ACTIU) -->
         <div id="session-active-view" style="display: none;">
             <button class="btn-back" onclick="returnToSelection()">⬅️ Canviar de Sessió</button>
             <div class="card" style="margin-bottom: 15px; background: rgba(34, 197, 94, 0.05); border-color: var(--primary);">
                 <h2 id="active-session-title" style="margin-bottom: 0; color: var(--primary);">Sessió</h2>
             </div>
-
-            <!-- CONTENIDOR D'EXERCICIS EN CASCADA -->
             <div id="exercises-container"></div>
-
             <button class="main-btn" onclick="saveWorkoutSession()">Finalitzar i Guardar Sessió 💾</button>
         </div>
-
     </div>
 
     <!-- TEMPORITZADOR DE DESCANS FLOTANT -->
@@ -447,8 +449,86 @@
     <!-- PESTANYA 3: ESTADÍSTIQUES -->
     <div id="tab-stats" class="tab-content">
         <div class="card">
-            <h2>📊 Progrés</h2>
+            <h2>📊 Progrés d'Entrenament</h2>
             <canvas id="progressChart"></canvas>
+        </div>
+    </div>
+
+    <!-- PESTANYA 4: EVOLUCIÓ FÍSICA -->
+    <div id="tab-evolution" class="tab-content">
+        <!-- 1. FORMULARI D'INGRESTRAR DADES MENSUALS -->
+        <div class="card">
+            <h2>📝 Nou Registre Mensual</h2>
+            <div class="form-group">
+                <label for="evo-date">Data:</label>
+                <input type="date" id="evo-date">
+            </div>
+            <div class="grid-2col">
+                <div class="form-group">
+                    <label for="evo-weight">Pes (kg):</label>
+                    <input type="number" step="0.1" id="evo-weight" placeholder="Ex: 75.5">
+                </div>
+                <div class="form-group">
+                    <label for="evo-fat">% Greix:</label>
+                    <input type="number" step="0.1" id="evo-fat" placeholder="Ex: 14.5">
+                </div>
+            </div>
+            <div class="grid-2col">
+                <div class="form-group">
+                    <label for="evo-water">% Aigua:</label>
+                    <input type="number" step="0.1" id="evo-water" placeholder="Ex: 60.0">
+                </div>
+                <div class="form-group">
+                    <label for="evo-muscle">% Múscul:</label>
+                    <input type="number" step="0.1" id="evo-muscle" placeholder="Ex: 42.0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="evo-photo">Fotografia de Control:</label>
+                <input type="file" id="evo-photo" accept="image/*">
+            </div>
+            <button class="main-btn" onclick="saveEvolutionRecord()">Guardar Registre 📸</button>
+        </div>
+
+        <!-- 2. COMPARADOR DE FOTOS -->
+        <div class="card">
+            <h2>🔍 Comparador Visual</h2>
+            <div class="grid-2col">
+                <div class="form-group">
+                    <label>Foto 1 (Abans):</label>
+                    <select id="select-photo-1" onchange="updatePhotoComparison()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Foto 2 (Després):</label>
+                    <select id="select-photo-2" onchange="updatePhotoComparison()"></select>
+                </div>
+            </div>
+            <div class="photo-comparison-container">
+                <div class="photo-card">
+                    <span id="label-photo-1" style="font-size:0.75rem; color:var(--text-muted);">-</span>
+                    <img id="img-comp-1" src="" alt="Foto 1" style="display:none;">
+                    <div id="no-img-1" style="height:180px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.8rem;">Cap foto</div>
+                </div>
+                <div class="photo-card">
+                    <span id="label-photo-2" style="font-size:0.75rem; color:var(--text-muted);">-</span>
+                    <img id="img-comp-2" src="" alt="Foto 2" style="display:none;">
+                    <div id="no-img-2" style="height:180px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.8rem;">Cap foto</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. GRÀFICA D'EVOLUCIÓ DE COMPOSICIÓ CORPORAL -->
+        <div class="card">
+            <h2>📈 Evolució Corporal</h2>
+            <canvas id="evolutionChart"></canvas>
+        </div>
+
+        <!-- 4. HISTORIAL DE MESURES -->
+        <div class="card">
+            <h2>📋 Registres Anteriors</h2>
+            <div id="evolution-history-list">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha dades d'evolució.</p>
+            </div>
         </div>
     </div>
 
@@ -456,7 +536,8 @@
     <nav>
         <button onclick="switchTab('workout')" id="nav-workout" class="active">💪 Entrenament</button>
         <button onclick="switchTab('history')" id="nav-history">📋 Historial</button>
-        <button onclick="switchTab('stats')" id="nav-stats">📊 Estadístiques</button>
+        <button onclick="switchTab('stats')" id="nav-stats">📊 Stats</button>
+        <button onclick="switchTab('evolution')" id="nav-evolution">📸 Evolució</button>
     </nav>
 
     <script>
@@ -542,23 +623,16 @@
         let exerciseSetsCount = {};
         let workoutState = {};
 
-        // Renderitzar les caixetes de selecció d'entrenament a la pantalla principal
         function renderSessionBoxes() {
             const container = document.getElementById('workout-boxes-container');
             let html = '';
-
             for (const key in sessionData) {
                 const session = sessionData[key];
                 const exerciseListText = session.exercises.map(e => e.name).join(' • ');
-
                 html += `
                     <div class="workout-box" onclick="selectSession('${key}')">
-                        <div class="workout-box-title">
-                            ${session.title} <span>➔</span>
-                        </div>
-                        <div class="workout-box-preview">
-                            ${exerciseListText}
-                        </div>
+                        <div class="workout-box-title">${session.title} <span>➔</span></div>
+                        <div class="workout-box-preview">${exerciseListText}</div>
                     </div>
                 `;
             }
@@ -568,11 +642,8 @@
         function selectSession(key) {
             currentSessionKey = key;
             document.getElementById('active-session-title').textContent = sessionData[key].title;
-            
-            // Canviar de vista
             document.getElementById('session-selector-view').style.display = 'none';
             document.getElementById('session-active-view').style.display = 'block';
-
             renderWorkoutSession();
         }
 
@@ -585,7 +656,6 @@
         }
 
         let audioCtx = null;
-
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -601,7 +671,6 @@
         function playAppleStyleTone() {
             initAudio();
             if (!audioCtx) return;
-
             const now = audioCtx.currentTime;
             
             const osc1 = audioCtx.createOscillator();
@@ -634,11 +703,8 @@
             const exercises = sessionData[currentSessionKey].exercises;
             exercises.forEach((ex, exIndex) => {
                 let totalSets = exerciseSetsCount[currentSessionKey] ? exerciseSetsCount[currentSessionKey][exIndex] : 3;
-                
                 let targetElem = document.getElementById(`target_${exIndex}`);
-                if(targetElem) {
-                    workoutState[currentSessionKey][`target_${exIndex}`] = targetElem.value;
-                }
+                if(targetElem) workoutState[currentSessionKey][`target_${exIndex}`] = targetElem.value;
 
                 for(let s = 1; s <= totalSets; s++) {
                     let wElem = document.getElementById(`w_${exIndex}_${s}`);
@@ -673,7 +739,6 @@
             let html = '';
             exercises.forEach((ex, exIndex) => {
                 let totalSets = exerciseSetsCount[currentSessionKey][exIndex];
-                
                 let savedTarget = (workoutState[currentSessionKey] && workoutState[currentSessionKey][`target_${exIndex}`]) 
                     ? workoutState[currentSessionKey][`target_${exIndex}`] 
                     : ex.defaultTarget;
@@ -721,12 +786,10 @@
         }
 
         let currentSelectedSeconds = 90;
-
         function completeSet(exIndex, setNum) {
             initAudio(); 
             const btn = document.getElementById(`btn_${exIndex}_${setNum}`);
             btn.classList.toggle('completed');
-            
             if(btn.classList.contains('completed')) {
                 startTimer(currentSelectedSeconds);
             }
@@ -738,7 +801,6 @@
         function startTimer(seconds) {
             clearInterval(timerInterval);
             initAudio();
-            
             targetEndTime = Date.now() + (seconds * 1000);
             document.getElementById('timer-container').style.display = 'block';
             updateTimerDisplay();
@@ -746,7 +808,6 @@
             timerInterval = setInterval(() => {
                 const now = Date.now();
                 const remainingMs = targetEndTime - now;
-
                 if (remainingMs <= 0) {
                     clearInterval(timerInterval);
                     updateTimerDisplay(0);
@@ -766,7 +827,6 @@
             });
             const activeBtn = document.getElementById(`btn-${seconds}`);
             if(activeBtn) activeBtn.classList.add('active-time');
-
             startTimer(seconds);
         }
 
@@ -855,15 +915,217 @@
             `).join('');
         }
 
+        /* ----------------------------------------------------
+           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA
+        ---------------------------------------------------- */
+        let evolutionData = JSON.parse(localStorage.getItem('gym_evolution')) || [];
+
+        // Data d'avui per defecte al formulari
+        document.getElementById('evo-date').valueToDate = new Date();
+        document.getElementById('evo-date').value = new Date().toISOString().substring(0, 10);
+
+        function saveEvolutionRecord() {
+            const date = document.getElementById('evo-date').value;
+            const weight = parseFloat(document.getElementById('evo-weight').value) || null;
+            const fat = parseFloat(document.getElementById('evo-fat').value) || null;
+            const water = parseFloat(document.getElementById('evo-water').value) || null;
+            const muscle = parseFloat(document.getElementById('evo-muscle').value) || null;
+            const photoInput = document.getElementById('evo-photo');
+
+            if (!date) {
+                alert('Si us plau, selecciona una data.');
+                return;
+            }
+
+            if (photoInput.files && photoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const photoBase64 = e.target.result;
+                    storeEvolutionEntry(date, weight, fat, water, muscle, photoBase64);
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+            } else {
+                storeEvolutionEntry(date, weight, fat, water, muscle, null);
+            }
+        }
+
+        function storeEvolutionEntry(date, weight, fat, water, muscle, photo) {
+            const record = { date, weight, fat, water, muscle, photo };
+            
+            // Si ja existeix un registre per aquesta data, l'actualitzem
+            const existingIndex = evolutionData.findIndex(item => item.date === date);
+            if (existingIndex !== -1) {
+                evolutionData[existingIndex] = record;
+            } else {
+                evolutionData.push(record);
+            }
+
+            // Ordenar per data ascendent
+            evolutionData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
+            
+            // Netejar camps del formulari
+            document.getElementById('evo-weight').value = '';
+            document.getElementById('evo-fat').value = '';
+            document.getElementById('evo-water').value = '';
+            document.getElementById('evo-muscle').value = '';
+            document.getElementById('evo-photo').value = '';
+
+            alert('📸 Registre d\'evolució guardat amb èxit!');
+            updateEvolutionUI();
+        }
+
+        function updateEvolutionUI() {
+            updateEvolutionHistoryList();
+            updatePhotoSelectorOptions();
+            renderEvolutionChart();
+        }
+
+        function updateEvolutionHistoryList() {
+            const container = document.getElementById('evolution-history-list');
+            if (evolutionData.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha dades d\'evolució.</p>';
+                return;
+            }
+
+            container.innerHTML = evolutionData.slice().reverse().map(item => `
+                <div class="history-item">
+                    <strong style="color: var(--primary);">📅 ${item.date}</strong><br>
+                    <div style="margin-top: 5px; font-size: 0.85rem; color: #cbd5e1; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <span>⚖️ Pes: <strong>${item.weight ? item.weight+' kg' : '-'}</strong></span>
+                        <span>🔥 Greix: <strong>${item.fat ? item.fat+'%' : '-'}</strong></span>
+                        <span>💧 Aigua: <strong>${item.water ? item.water+'%' : '-'}</strong></span>
+                        <span>💪 Múscul: <strong>${item.muscle ? item.muscle+'%' : '-'}</strong></span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePhotoSelectorOptions() {
+            const sel1 = document.getElementById('select-photo-1');
+            const sel2 = document.getElementById('select-photo-2');
+
+            sel1.innerHTML = '<option value="">-- Selecciona Data --</option>';
+            sel2.innerHTML = '<option value="">-- Selecciona Data --</option>';
+
+            evolutionData.forEach((item, index) => {
+                if (item.photo) {
+                    sel1.innerHTML += `<option value="${index}">${item.date}</option>`;
+                    sel2.innerHTML += `<option value="${index}">${item.date}</option>`;
+                }
+            });
+
+            // Auto-seleccionar la primera i última foto si n'hi ha
+            const photoEntries = evolutionData.filter(item => item.photo);
+            if (photoEntries.length >= 2) {
+                sel1.selectedIndex = 1;
+                sel2.selectedIndex = photoEntries.length;
+            } else if (photoEntries.length === 1) {
+                sel1.selectedIndex = 1;
+            }
+            updatePhotoComparison();
+        }
+
+        function updatePhotoComparison() {
+            const idx1 = document.getElementById('select-photo-1').value;
+            const idx2 = document.getElementById('select-photo-2').value;
+
+            const img1 = document.getElementById('img-comp-1');
+            const noImg1 = document.getElementById('no-img-1');
+            const label1 = document.getElementById('label-photo-1');
+
+            const img2 = document.getElementById('img-comp-2');
+            const noImg2 = document.getElementById('no-img-2');
+            const label2 = document.getElementById('label-photo-2');
+
+            if (idx1 !== "" && evolutionData[idx1] && evolutionData[idx1].photo) {
+                img1.src = evolutionData[idx1].photo;
+                img1.style.display = 'block';
+                noImg1.style.display = 'none';
+                label1.textContent = evolutionData[idx1].date;
+            } else {
+                img1.style.display = 'none';
+                noImg1.style.display = 'flex';
+                label1.textContent = '-';
+            }
+
+            if (idx2 !== "" && evolutionData[idx2] && evolutionData[idx2].photo) {
+                img2.src = evolutionData[idx2].photo;
+                img2.style.display = 'block';
+                noImg2.style.display = 'none';
+                label2.textContent = evolutionData[idx2].date;
+            } else {
+                img2.style.display = 'none';
+                noImg2.style.display = 'flex';
+                label2.textContent = '-';
+            }
+        }
+
+        let evoChartInstance = null;
+        function renderEvolutionChart() {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            if (evoChartInstance) evoChartInstance.destroy();
+
+            const labels = evolutionData.map(item => item.date);
+            const weights = evolutionData.map(item => item.weight);
+            const fats = evolutionData.map(item => item.fat);
+            const muscles = evolutionData.map(item => item.muscle);
+
+            evoChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Pes (kg)',
+                            data: weights,
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: '% Greix',
+                            data: fats,
+                            borderColor: '#ef4444',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: '% Múscul',
+                            data: muscles,
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
             
             document.getElementById('tab-' + tabName).classList.add('active');
             document.getElementById('nav-' + tabName).classList.add('active');
+
+            if (tabName === 'evolution') {
+                updateEvolutionUI();
+            }
         }
 
-        // Inicialitzar la vista de caixetes en carregar
         renderSessionBoxes();
         updateHistoryUI();
 
