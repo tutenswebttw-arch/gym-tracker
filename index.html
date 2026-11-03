@@ -74,21 +74,25 @@
             gap: 8px;
         }
 
+        /* CAIXETES D'ENTRENAMENT EN 2 COLUMNES */
         .workout-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
             margin-bottom: 20px;
         }
 
         .workout-box {
             background-color: var(--card-bg);
             border: 2px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
+            border-radius: 12px;
+            padding: 14px;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .workout-box:hover {
@@ -98,19 +102,19 @@
         }
 
         .workout-box-title {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
             color: var(--primary);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .workout-box-preview {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .btn-back {
@@ -564,6 +568,16 @@
 
     <script>
         const sessionData = {
+            royalpit: {
+                title: "PIT Royal",
+                exercises: [
+                    { name: "1. Press Banca", defaultTarget: "8-10" },
+                    { name: "2. Press Inclinat", defaultTarget: "10-12" },
+                    { name: "3. Creuament politges superior", defaultTarget: "12-15" },
+                    { name: "4. Extensió Tríceps", defaultTarget: "12-15" },
+                    { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
+                ]
+            },
             royalcama: {
                 title: "CAMES Royal",
                 exercises: [
@@ -582,25 +596,6 @@
                     { name: "3. Rem una mà", defaultTarget: "10-12" },
                     { name: "4. Tracció pit barra ampla", defaultTarget: "10-12" },
                     { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
-                ]
-            },
-            royalpit: {
-                title: "PIT Royal",
-                exercises: [
-                    { name: "1. Press Banca", defaultTarget: "8-10" },
-                    { name: "2. Press Inclinat", defaultTarget: "10-12" },
-                    { name: "3. Creuament politges superior", defaultTarget: "12-15" },
-                    { name: "4. Extensió Tríceps", defaultTarget: "12-15" },
-                    { name: "5. Elevacions Laterals", defaultTarget: "12-15" }
-                ]
-            },
-            push: {
-                title: "Sessió Push (Pit, Espatlla, Tríceps)",
-                exercises: [
-                    { name: "1. Press de Banca", defaultTarget: "8-10" },
-                    { name: "2. Press Inclinat amb Mancornes", defaultTarget: "10-12" },
-                    { name: "3. Obertures en Pollea / Pit", defaultTarget: "12-15" },
-                    { name: "4. Extensions de Tríceps", defaultTarget: "12-15" }
                 ]
             },
             pull: {
@@ -1002,7 +997,6 @@
                 photos: photos || { perfil: null, cara: null, esquena: null }
             };
 
-            // Si ja existia i no s'han pujat noves fotos en aquest guardat, mantenir les anteriors
             if (existingIndex !== -1) {
                 if (!photos.perfil) record.photos.perfil = evolutionData[existingIndex].photos.perfil;
                 if (!photos.cara) record.photos.cara = evolutionData[existingIndex].photos.cara;
@@ -1015,7 +1009,6 @@
             evolutionData.sort((a, b) => new Date(a.date) - new Date(b.date));
             localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
 
-            // Netejar inputs
             document.getElementById('evo-weight').value = '';
             document.getElementById('evo-fat').value = '';
             document.getElementById('evo-water').value = '';
