@@ -143,7 +143,7 @@
             margin-bottom: 3px;
         }
 
-        select, input, textarea {
+        select, input {
             width: 100%;
             padding: 10px;
             background-color: var(--bg-color);
@@ -153,7 +153,7 @@
             font-size: 0.95rem;
         }
 
-        select:focus, input:focus, textarea:focus {
+        select:focus, input:focus {
             outline: none;
             border-color: var(--primary);
         }
@@ -571,18 +571,17 @@
             </div>
         </div>
 
-        <!-- 5. CÒPIES DE SEGURETAT INFAL·LIBLES (PORTAPAPERS) -->
+        <!-- 5. CÒPIES DE SEGURETAT AMB FITXER AUTOMÀTIC -->
         <div class="card">
-            <h2>🛡️ Còpies de Seguretat (Portapapers)</h2>
-            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Copia totes les teves dades al portapapers per guardar-les a Notes o WhatsApp, i restaura-les enganxant-les aquí.</p>
+            <h2>🛡️ Còpies de Seguretat</h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Descarrega un fitxer de còpia segur o importa'l directament.</p>
             
-            <button class="btn-secondary" onclick="exportBackupClipboard()">📤 Copiar Còpia al Portapapers</button>
+            <button class="btn-secondary" onclick="exportBackupFile()">📤 Descarregar Fitxer de Còpia (.json)</button>
             
             <div class="form-group" style="margin-top: 15px;">
-                <label for="import-textarea">Enganxa aquí el codi de la còpia per restaurar:</label>
-                <textarea id="import-textarea" rows="3" placeholder="Enganxa el text de la còpia aquí..."></textarea>
+                <label for="import-file-input">Selecciona el fitxer de còpia per restaurar:</label>
+                <input type="file" id="import-file-input" accept=".json" onchange="importBackupFile(event)">
             </div>
-            <button class="btn-secondary" onclick="importBackupClipboard()" style="background-color: var(--primary); color: #000;">📥 Restaurar des del Text</button>
         </div>
     </div>
 
@@ -1215,50 +1214,54 @@
         }
 
         /* ----------------------------------------------------
-           CÒPIES DE SEGURETAT SEGURES (PORTAPAPERS)
+           EXPORTAR I IMPORTAR FITXER DE CÒPIA DE SEGURETAT (.JSON)
         ---------------------------------------------------- */
-        function exportBackupClipboard() {
+        function exportBackupFile() {
             const fullBackup = {
                 history: historyData,
                 evolution: evolutionData,
                 exportDate: new Date().toISOString()
             };
-            const jsonString = JSON.stringify(fullBackup);
             
-            navigator.clipboard.writeText(jsonString).then(() => {
-                alert('✅ Còpia de seguretat copiada al portapapers! Ja la pots enganxar a Notes o enviar-te-la.');
-            }).catch(err => {
-                // Fallback manual si el navegador bloqueja el clipboard directe
-                prompt("Copia tot aquest text manualment:", jsonString);
-            });
+            // Creació d'un Blob segur per descarregar com a fitxer automàticament
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `jordi_gym_backup_${new Date().toISOString().substring(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            
+            alert('✅ Fitxer de còpia generat i descarregat correctament!');
         }
 
-        function importBackupClipboard() {
-            const textareaValue = document.getElementById('import-textarea').value.trim();
-            if (!textareaValue) {
-                alert('⚠️ Si us plau, enganxa primer el text de la còpia al requadre.');
-                return;
-            }
+        function importBackupFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            try {
-                const importedData = JSON.parse(textareaValue);
-                if (importedData.history && importedData.evolution) {
-                    historyData = importedData.history;
-                    evolutionData = importedData.evolution;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.history && importedData.evolution) {
+                        historyData = importedData.history;
+                        evolutionData = importedData.evolution;
 
-                    localStorage.setItem('gym_history', JSON.stringify(historyData));
-                    localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
+                        localStorage.setItem('gym_history', JSON.stringify(historyData));
+                        localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
 
-                    updateHistoryUI();
-                    updateEvolutionUI();
-                    alert('✅ Dades restaurades correctament des del text!');
-                    document.getElementById('import-textarea').value = '';
-                } else {
-                    alert('⚠️ El text enganxat no té el format de còpia vàlid.');
+                        updateHistoryUI();
+                        updateEvolutionUI();
+                        alert('✅ Dades i fotos restaurades correctament des del fitxer!');
+                        document.getElementById('import-file-input').value = '';
+                    } else {
+                        alert('⚠️ El fitxer seleccionat no té un format de còpia vàlid.');
+                    }
+                } catch (err) {
+                    alert('⚠️ Error al llegir el fitxer de còpia.');
                 }
-            } catch (err) {
-                alert('⚠️ Error al llegir el text. Assegura\'t d\'haver-lo enganxat sencer.');
-            }
+            };
+            reader.readAsText(file);
         }
 
         function switchTab(tabName) {
