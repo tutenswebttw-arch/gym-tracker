@@ -275,6 +275,19 @@
             margin-top: 10px;
         }
 
+        .btn-secondary {
+            background-color: var(--border);
+            color: var(--text-main);
+            border: none;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
         #timer-container {
             position: fixed;
             bottom: 60px;
@@ -428,7 +441,7 @@
             <span style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Temps de Descans</span>
             <button onclick="stopTimer()" style="background:none; border:none; color:var(--danger); font-size:1rem; cursor:pointer; width:auto; padding:0;">✕ Tancar</button>
         </div>
-        <div id="timer-display">02:30</div>
+        <div id="timer-display">01:30</div>
         <div class="timer-btns">
             <button onclick="setRestTime(60)" id="btn-60">60s</button>
             <button onclick="setRestTime(90)" id="btn-90" class="active-time">90s</button>
@@ -555,6 +568,15 @@
             <div id="evolution-history-list">
                 <p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha dades d'evolució.</p>
             </div>
+        </div>
+
+        <!-- 5. CÒPIES DE SEGURETAT (EXPORTAR / IMPORTAR) -->
+        <div class="card">
+            <h2>🛡️ Còpies de Seguretat</h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Descarrega una còpia per no perdre dades si borres la memòria o el mòbil[cite: 2].</p>
+            <button class="btn-secondary" onclick="exportBackupData()">📤 Exportar Dades i Fotos</button>
+            <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importBackupData(event)">
+            <button class="btn-secondary" style="margin-top: 8px;" onclick="document.getElementById('import-file').click()">📥 Importar Còpia de Seguretat</button>
         </div>
     </div>
 
@@ -943,10 +965,37 @@
         }
 
         /* ----------------------------------------------------
-           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA (3 FOTOS)
+           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA I FOTOS
         ---------------------------------------------------- */
         let evolutionData = JSON.parse(localStorage.getItem('gym_evolution')) || [];
         document.getElementById('evo-date').value = new Date().toISOString().substring(0, 10);
+
+        function compressImage(file, maxWidth, quality, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    callback(compressedDataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
         function saveEvolutionRecord() {
             const date = document.getElementById('evo-date').value;
@@ -975,23 +1024,29 @@
 
             if (fPerfil.files && fPerfil.files[0]) {
                 pendingReads++;
-                const reader = new FileReader();
-                reader.onload = function(e) { photos.perfil = e.target.result; pendingReads--; checkDone(); };
-                reader.readAsDataURL(fPerfil.files[0]);
+                compressImage(fPerfil.files[0], 600, 0.7, function(res) {
+                    photos.perfil = res;
+                    pendingReads--;
+                    checkDone();
+                });
             }
 
             if (fCara.files && fCara.files[0]) {
                 pendingReads++;
-                const reader = new FileReader();
-                reader.onload = function(e) { photos.cara = e.target.result; pendingReads--; checkDone(); };
-                reader.readAsDataURL(fCara.files[0]);
+                compressImage(fCara.files[0], 600, 0.7, function(res) {
+                    photos.cara = res;
+                    pendingReads--;
+                    checkDone();
+                });
             }
 
             if (fEsquena.files && fEsquena.files[0]) {
                 pendingReads++;
-                const reader = new FileReader();
-                reader.onload = function(e) { photos.esquena = e.target.result; pendingReads--; checkDone(); };
-                reader.readAsDataURL(fEsquena.files[0]);
+                compressImage(fEsquena.files[0], 600, 0.7, function(res) {
+                    photos.esquena = res;
+                    pendingReads--;
+                    checkDone();
+                });
             }
 
             if (pendingReads === 0) {
@@ -1008,27 +1063,33 @@
             };
 
             if (existingIndex !== -1) {
-                if (!photos.perfil) record.photos.perfil = evolutionData[existingIndex].photos.perfil;
-                if (!photos.cara) record.photos.cara = evolutionData[existingIndex].photos.cara;
-                if (!photos.esquena) record.photos.esquena = evolutionData[existingIndex].photos.esquena;
+                if (!photos.perfil) record.photos.perfil = evolutionData[existingIndex].photos ? evolutionData[existingIndex].photos.perfil : null;
+                if (!photos.cara) record.photos.cara = evolutionData[existingIndex].photos ? evolutionData[existingIndex].photos.cara : null;
+                if (!photos.esquena) record.photos.esquena = evolutionData[existingIndex].photos ? evolutionData[existingIndex].photos.esquena : null;
                 evolutionData[existingIndex] = record;
             } else {
                 evolutionData.push(record);
             }
 
             evolutionData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
+            
+            try {
+                localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
+                
+                document.getElementById('evo-weight').value = '';
+                document.getElementById('evo-fat').value = '';
+                document.getElementById('evo-water').value = '';
+                document.getElementById('evo-muscle').value = '';
+                document.getElementById('evo-photo-perfil').value = '';
+                document.getElementById('evo-photo-cara').value = '';
+                document.getElementById('evo-photo-esquena').value = '';
 
-            document.getElementById('evo-weight').value = '';
-            document.getElementById('evo-fat').value = '';
-            document.getElementById('evo-water').value = '';
-            document.getElementById('evo-muscle').value = '';
-            document.getElementById('evo-photo-perfil').value = '';
-            document.getElementById('evo-photo-cara').value = '';
-            document.getElementById('evo-photo-esquena').value = '';
-
-            alert('📸 Registre d\'evolució guardat amb èxit!');
-            updateEvolutionUI();
+                alert('📸 Registre d\'evolució guardat amb èxit!');
+                updateEvolutionUI();
+            } catch (err) {
+                alert('⚠️ Error al desar: La memòria del navegador està plena.');
+                console.error(err);
+            }
         }
 
         function updateEvolutionUI() {
@@ -1145,6 +1206,52 @@
                     }
                 }
             });
+        }
+
+        /* ----------------------------------------------------
+           EXPORTAR I IMPORTAR CÒPIES DE SEGURETAT (BACKUP)
+        ---------------------------------------------------- */
+        function exportBackupData() {
+            const fullBackup = {
+                history: historyData,
+                evolution: evolutionData,
+                exportDate: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `jordi_gym_backup_${new Date().toISOString().substring(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importBackupData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.history && importedData.evolution) {
+                        historyData = importedData.history;
+                        evolutionData = importedData.evolution;
+
+                        localStorage.setItem('gym_history', JSON.stringify(historyData));
+                        localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
+
+                        updateHistoryUI();
+                        updateEvolutionUI();
+                        alert('✅ Còpia de seguretat importada amb èxit!');
+                    } else {
+                        alert('⚠️ El fitxer seleccionat no té un format de còpia vàlid.');
+                    }
+                } catch (err) {
+                    alert('⚠️ Error al llegir el fitxer de còpia.');
+                }
+            };
+            reader.readAsText(file);
         }
 
         function switchTab(tabName) {
