@@ -22,7 +22,7 @@
             --text-muted: #94a3b8;
             --border: #334155;
             --danger: #ef4444;
-            --last-weight-color: #cbd5e1; /* Gris clar per a les dades de la sessió anterior */
+            --last-weight-color: #cbd5e1; /* Color gris clar per a les dades precedents */
         }
 
         * {
@@ -75,7 +75,6 @@
             gap: 8px;
         }
 
-        /* CAIXETES D'ENTRENAMENT EN 2 COLUMNES */
         .workout-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -367,7 +366,6 @@
             border-left: 4px solid var(--primary);
         }
 
-        /* ESTILS PER A LA PESTANYA D'EVOLUCIÓ */
         .photo-comparison-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -461,7 +459,6 @@
 
     <!-- PESTANYA 4: EVOLUCIÓ FÍSICA -->
     <div id="tab-evolution" class="tab-content">
-        <!-- 1. FORMULARI D'INGRESSAR DADES MENSUALS -->
         <div class="card">
             <h2>📝 Nou Registre Mensual</h2>
             <div class="form-group">
@@ -489,7 +486,6 @@
                 </div>
             </div>
 
-            <!-- FOTOS DE LES 3 POSICIONS -->
             <hr style="border:0; border-top:1px solid var(--border); margin: 15px 0;">
             <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 10px;">📸 Fotografies de Control</h3>
             
@@ -509,7 +505,6 @@
             <button class="main-btn" onclick="saveEvolutionRecord()">Guardar Registre 💾</button>
         </div>
 
-        <!-- 2. COMPARADOR DE FOTOS -->
         <div class="card">
             <h2>🔍 Comparador Visual</h2>
             <div class="form-group">
@@ -544,17 +539,28 @@
             </div>
         </div>
 
-        <!-- 3. GRÀFICA D'EVOLUCIÓ DE COMPOSICIÓ CORPORAL -->
         <div class="card">
             <h2>📈 Evolució Corporal</h2>
             <canvas id="evolutionChart"></canvas>
         </div>
 
-        <!-- 4. HISTORIAL DE MESURES -->
         <div class="card">
             <h2>📋 Registres Anteriors</h2>
             <div id="evolution-history-list">
                 <p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha dades d'evolució.</p>
+            </div>
+        </div>
+
+        <!-- CÒPIES DE SEGURETAT PERMANENTS -->
+        <div class="card" style="border-color: var(--primary);">
+            <h2>🛡️ Còpies de Seguretat</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                Guarda una còpia de tot el teu progrés (historial i evolució) o restaura-la si canvies de dispositiu.
+            </p>
+            <div class="grid-2col">
+                <button class="main-btn" style="background-color: var(--border); color: var(--text-main);" onclick="exportBackup()">📤 Exportar Dades</button>
+                <button class="main-btn" onclick="document.getElementById('import-file').click()">📥 Importar Dades</button>
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="importBackup(event)">
             </div>
         </div>
     </div>
@@ -651,6 +657,14 @@
         let exerciseSetsCount = {};
         let workoutState = {};
 
+        // Carregar historial inicial de forma segura i garantida
+        let historyData = [];
+        try {
+            historyData = JSON.parse(localStorage.getItem('gym_history')) || [];
+        } catch(e) {
+            historyData = [];
+        }
+
         function renderSessionBoxes() {
             const container = document.getElementById('workout-boxes-container');
             let html = '';
@@ -667,22 +681,17 @@
             container.innerHTML = html;
         }
 
-        // Funció per recuperar l'últim registre guardat per a un exercici concret d'aquesta sessió
+        // Funció per carregar el pes i les reps de l'última vegada realitzat
         function getLastWorkoutData(sessionTitle, exerciseName, setNum) {
             if (!historyData || historyData.length === 0) return null;
             
-            // Busquem a l'historial l'última sessió que coincideixi amb el tipus
             for (let i = 0; i < historyData.length; i++) {
                 let item = historyData[i];
                 if (item.sessionType.toUpperCase() === sessionTitle.toUpperCase()) {
-                    // Busquem dins dels detalls si existeix aquesta línia d'exercici i sèrie
-                    // Format guardat: "Nom Exercici [Obj: ...] (Sx): Xkg × Yreps [Notes]"
                     for (let d = 0; d < item.details.length; d++) {
                         let detail = item.details[d];
                         if (detail.startsWith(exerciseName) && detail.includes(`(S${setNum}):`)) {
-                            // Extraiem pes i reps
                             try {
-                                // Exemple: 1. Press Banca [Obj: 8-10] (S1): 40kg × 12reps [nota]
                                 let parts = detail.split(`(S${setNum}):`)[1].trim();
                                 let weightPart = parts.split('×')[0].replace('kg', '').trim();
                                 let repsPart = parts.split('×')[1].split('[')[0].replace('reps', '').trim();
@@ -707,12 +716,8 @@
             document.getElementById('session-selector-view').style.display = 'none';
             document.getElementById('session-active-view').style.display = 'block';
             
-            // Quan entrem, si no tenim estat previ actiu per aquesta sessió, mirem quantes sèries tenia l'últim cop o posem 3 per defecte
             if (!exerciseSetsCount[currentSessionKey]) {
-                exerciseSetsCount[currentSessionKey] = sessionData[key].exercises.map((ex, exIdx) => {
-                    // Podem comptar quantes sèries va tenir l'últim cop a l'historial si voleu, o deixar 3
-                    return 3;
-                });
+                exerciseSetsCount[currentSessionKey] = sessionData[key].exercises.map(() => 3);
             }
             
             renderWorkoutSession();
@@ -827,7 +832,6 @@
                 `;
 
                 for(let s = 1; s <= totalSets; s++) {
-                    // Comprovem si tenim dades guardades manualment a l'estat actual de la sessió
                     let savedData = (workoutState[currentSessionKey] && workoutState[currentSessionKey][`${exIndex}_${s}`]) 
                         ? workoutState[currentSessionKey][`${exIndex}_${s}`] 
                         : null;
@@ -839,30 +843,26 @@
                     let isFromPrevious = false;
 
                     if (savedData && (savedData.w !== '' || savedData.r !== '' || savedData.n !== '')) {
-                        // Si ja s'havia escrit alguna cosa en aquesta sessió actual, ho recuperem
                         weightVal = savedData.w;
                         repsVal = savedData.r;
                         noteVal = savedData.n;
                         isCompleted = savedData.completed;
                     } else {
-                        // Si no hi ha res escrit avui, anem a buscar automàticament l'últim dia que es va fer!
                         let lastRecord = getLastWorkoutData(session.title, ex.name, s);
                         if (lastRecord) {
                             weightVal = lastRecord.w;
                             repsVal = lastRecord.r;
-                            isFromPrevious = true; // Indica que ve de l'anterior
+                            isFromPrevious = true;
                         }
                     }
                     
-                    // Si ve de la sessió anterior, posem el color gris clar (style="color: var(--last-weight-color);")
                     let weightStyle = isFromPrevious && !savedData ? `color: var(--last-weight-color);` : '';
-                    let repsStyle = isFromPrevious && !savedData ? `color: var(--last-weight-color);` : '';
 
                     html += `
                         <div class="set-row" id="row_${exIndex}_${s}">
                             <label>S${s}</label>
                             <input type="number" step="0.5" placeholder="Kg" id="w_${exIndex}_${s}" value="${weightVal}" style="${weightStyle}" oninput="this.style.color='var(--text-main)'">
-                            <input type="number" placeholder="Reps" id="r_${exIndex}_${s}" value="${repsVal}" style="${repsStyle}" oninput="this.style.color='var(--text-main)'">
+                            <input type="number" placeholder="Reps" id="r_${exIndex}_${s}" value="${repsVal}" style="${weightStyle}" oninput="this.style.color='var(--text-main)'">
                             <input type="text" class="note-input" placeholder="Notes..." id="n_${exIndex}_${s}" value="${noteVal}">
                             <button type="button" class="btn-check ${isCompleted ? 'completed' : ''}" id="btn_${exIndex}_${s}" onclick="completeSet(${exIndex}, ${s})">✓</button>
                         </div>
@@ -955,8 +955,6 @@
                 String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
         }
 
-        let historyData = JSON.parse(localStorage.getItem('gym_history')) || [];
-
         function saveWorkoutSession() {
             if (!currentSessionKey) return;
             saveCurrentInputsToState();
@@ -990,10 +988,10 @@
                 details: summarySets
             };
 
+            // Afegir a l'historial i guardar en local storage de forma permanent
             historyData.unshift(record);
             localStorage.setItem('gym_history', JSON.stringify(historyData));
             
-            // Netegem l'estat temporal d'aquesta sessió perquè la propera vegada carregue l'historial recent com a referència
             delete workoutState[currentSessionKey];
 
             updateHistoryUI();
@@ -1004,12 +1002,12 @@
 
         function updateHistoryUI() {
             const container = document.getElementById('history-list');
-            if(historyData.length === 0) {
+            if(!historyData || historyData.length === 0) {
                 container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Encara no hi ha registres.</p>';
                 return;
             }
 
-            container.innerHTML = historyData.slice(0, 10).map(item => `
+            container.innerHTML = historyData.slice(0, 30).map(item => `
                 <div class="history-item">
                     <strong style="color: var(--primary);">[${item.sessionType}]</strong> <span style="font-size:0.75rem; color:var(--text-muted);">${item.date}</span><br>
                     <div style="margin-top: 5px; font-size: 0.85rem; color: #cbd5e1;">
@@ -1020,9 +1018,15 @@
         }
 
         /* ----------------------------------------------------
-           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA (3 FOTOS)
+           LÒGICA DE LA PESTANYA D'EVOLUCIÓ FÍSICA
         ---------------------------------------------------- */
-        let evolutionData = JSON.parse(localStorage.getItem('gym_evolution')) || [];
+        let evolutionData = [];
+        try {
+            evolutionData = JSON.parse(localStorage.getItem('gym_evolution')) || [];
+        } catch(e) {
+            evolutionData = [];
+        }
+        
         document.getElementById('evo-date').value = new Date().toISOString().substring(0, 10);
 
         function saveEvolutionRecord() {
@@ -1053,27 +1057,64 @@
             if (fPerfil.files && fPerfil.files[0]) {
                 pendingReads++;
                 const reader = new FileReader();
-                reader.onload = function(e) { photos.perfil = e.target.result; pendingReads--; checkDone(); };
+                reader.onload = function(e) {
+                    resizeImage(e.target.result, 600, (compressed) => {
+                        photos.perfil = compressed;
+                        pendingReads--;
+                        checkDone();
+                    });
+                };
                 reader.readAsDataURL(fPerfil.files[0]);
             }
 
             if (fCara.files && fCara.files[0]) {
                 pendingReads++;
                 const reader = new FileReader();
-                reader.onload = function(e) { photos.cara = e.target.result; pendingReads--; checkDone(); };
+                reader.onload = function(e) {
+                    resizeImage(e.target.result, 600, (compressed) => {
+                        photos.cara = compressed;
+                        pendingReads--;
+                        checkDone();
+                    });
+                };
                 reader.readAsDataURL(fCara.files[0]);
             }
 
             if (fEsquena.files && fEsquena.files[0]) {
                 pendingReads++;
                 const reader = new FileReader();
-                reader.onload = function(e) { photos.esquena = e.target.result; pendingReads--; checkDone(); };
+                reader.onload = function(e) {
+                    resizeImage(e.target.result, 600, (compressed) => {
+                        photos.esquena = compressed;
+                        pendingReads--;
+                        checkDone();
+                    });
+                };
                 reader.readAsDataURL(fEsquena.files[0]);
             }
 
             if (pendingReads === 0) {
                 storeEvolutionEntry(date, weight, fat, water, muscle, photos);
             }
+        }
+
+        function resizeImage(base64Str, maxWidth, callback) {
+            let img = new Image();
+            img.src = base64Str;
+            img.onload = function () {
+                let canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                let ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
         }
 
         function storeEvolutionEntry(date, weight, fat, water, muscle, photos) {
@@ -1224,6 +1265,46 @@
             });
         }
 
+        // Sistema d'Exportar / Importar
+        function exportBackup() {
+            const backupObj = {
+                history: historyData,
+                evolution: evolutionData
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "jordi_gym_backup_" + new Date().toISOString().substring(0,10) + ".json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importBackup(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = function (e) {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (parsed.history) {
+                            historyData = parsed.history;
+                            localStorage.setItem('gym_history', JSON.stringify(historyData));
+                        }
+                        if (parsed.evolution) {
+                            evolutionData = parsed.evolution;
+                            localStorage.setItem('gym_evolution', JSON.stringify(evolutionData));
+                        }
+                        updateHistoryUI();
+                        updateEvolutionUI();
+                        alert('✅ Còpia importada correctament!');
+                    } catch (error) {
+                        alert('❌ Error al llegir el fitxer de còpia.');
+                    }
+                };
+            }
+        }
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
@@ -1236,6 +1317,7 @@
             }
         }
 
+        // Dibuix de caixes i càrrega forçada de l'historial a l'inici
         renderSessionBoxes();
         updateHistoryUI();
 
