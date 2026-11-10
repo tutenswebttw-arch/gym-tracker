@@ -886,16 +886,18 @@
                             weightVal = lastRecord.w;
                             repsVal = lastRecord.r;
                             isFromPrevious = true;
+                            isCompleted = false; // Forcem a què els ticks NO estiguin activats per defecte
                         }
                     }
                     
-                    let weightStyle = isFromPrevious && !savedData ? `color: var(--last-weight-color);` : '';
+                    // Color gris clar informatiu si ve de l'historial anterior
+                    let inputStyle = isFromPrevious && !savedData ? `color: var(--last-weight-color);` : '';
 
                     html += `
                         <div class="set-row" id="row_${exIndex}_${s}">
                             <label>S${s}</label>
-                            <input type="number" step="0.5" placeholder="Kg" id="w_${exIndex}_${s}" value="${weightVal}" style="${weightStyle}" oninput="this.style.color='var(--text-main)'">
-                            <input type="number" placeholder="Reps" id="r_${exIndex}_${s}" value="${repsVal}" style="${weightStyle}" oninput="this.style.color='var(--text-main)'">
+                            <input type="number" step="0.5" placeholder="Kg" id="w_${exIndex}_${s}" value="${weightVal}" style="${inputStyle}" oninput="this.style.color='var(--text-main)'">
+                            <input type="number" placeholder="Reps" id="r_${exIndex}_${s}" value="${repsVal}" style="${inputStyle}" oninput="this.style.color='var(--text-main)'">
                             <input type="text" class="note-input" placeholder="Notes..." id="n_${exIndex}_${s}" value="${noteVal}">
                             <button type="button" class="btn-check ${isCompleted ? 'completed' : ''}" id="btn_${exIndex}_${s}" onclick="completeSet(${exIndex}, ${s})">✓</button>
                         </div>
